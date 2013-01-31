@@ -10,10 +10,11 @@
       "express":      ">= 3.0.0",
       "async":        "0.1.22",
       "sugar":        "1.2.5",
-      "cardamom":     "0.0.9d",
       "nogg":         "0.0.8",
       "coffeemugg":   "0.0.7",
-      "marked":       ">= 0.2.7"
+      "marked":       ">= 0.2.7",
+      "three":        "0.55.0",
+      "demodule":     "0.0.1"
     },
   "keywords": [],
   "engines": {"node": ">= 0.8.2"},

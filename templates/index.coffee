@@ -6,7 +6,7 @@
       @title "kopimism.org"
       @meta name: 'description', content: 'Copying could be a Right, if you want it.'
       @link rel: 'stylesheet', href: '/stylesheets/app.css'
-      # @script src: '/javascripts/jquery.js'
+      @script src: '/javascripts/client.js'
 
     @body ->
 

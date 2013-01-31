@@ -1,7 +1,7 @@
 fs = require 'fs'
 {spawn, exec} = require 'child_process'
+demodule = require 'demodule'
 log = console.log
-sugar = require 'sugar'
 
 task 'scss', ->
   run 'sass --watch static/stylesheets/:static/stylesheets/'
@@ -11,6 +11,15 @@ task 'debug', 'Run the debug server', ->
 
 task 'server', 'Run the server', ->
   run 'coffee server'
+
+task 'browser', 'Package javascript for browser', ->
+  {code,minCode} = demodule [
+    {name:'client',          path:'client/**.coffee'}
+    {name:'async',           path:'node_modules/async/lib/async.js'}
+    {name:'three',           path:'node_modules/three/three.js'}
+  ], "require('client')();"
+  fs.writeFileSync 'static/javascripts/client.js', code, 'utf8'
+  fs.writeFileSync 'static/javascripts/client.min.js', minCode, 'utf8'
 
 run = (args...) ->
   for a in args

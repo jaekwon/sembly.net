@@ -15,7 +15,7 @@
 
       # Header, Logo
       @article ->
-        @img style:"border: 0; height: 100px;", src:"/images/Kopimi_k.svg.png", alt:"{% Kopimism %}"
+        @img style:"border: 0; height: 100px;", src:"/images/sembly_net.png", alt:"{% Sembly %}"
 
       # Fork me on GitHub!
       @a href:"https://github.com/jaekwon/kopimism.org", ->

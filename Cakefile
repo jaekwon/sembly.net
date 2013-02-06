@@ -15,11 +15,12 @@ task 'server', 'Run the server', ->
 task 'browser', 'Package javascript for browser', ->
   {code,minCode} = demodule [
     {name:'client',          path:'client/**.coffee'}
+    {name:'client',          path:'client/**.js'}
     {name:'async',           path:'node_modules/async/lib/async.js'}
     {name:'three',           path:'node_modules/three/three.js'}
-  ], "require('client')();"
+  ], "window.require = require; require('client')();"
   fs.writeFileSync 'static/javascripts/client.js', code, 'utf8'
-  fs.writeFileSync 'static/javascripts/client.min.js', minCode, 'utf8'
+  fs.writeFileSync 'static/javascripts/client.min.js', minCode, 'utf8' if minCode?
 
 run = (args...) ->
   for a in args

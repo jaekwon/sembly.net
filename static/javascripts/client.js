@@ -13,15 +13,401 @@
             return module;
           }
         }
-        require['client'] = function() {
+        require['client/control'] = function() {
+    return new function() {
+        var exports = require['client/control'] = this;
+        var module = {exports:exports};
+        var process = require("__browserify_process");
+        var __filename = "client/control.coffee";
+        (function() {
+
+  this.installControls = function(_arg) {
+    var camera, controls, elem, isDrag, render, selected;
+    camera = _arg.camera, elem = _arg.elem, render = _arg.render;
+    controls = new THREE.TrackballControls(camera, elem);
+    controls.rotateSpeed = 1.0;
+    controls.zoomSpeed = 10;
+    controls.panSpeed = 0.8;
+    controls.noZoom = false;
+    controls.noPan = false;
+    controls.staticMoving = true;
+    controls.dynamicDampingFactor = 0.3;
+    controls.keys = [65, 83, 68];
+    controls.addEventListener('change', render);
+    selected = void 0;
+    isDrag = false;
+    $(elem).mousemove(function(event) {
+      if (event.which === 1) {
+        return isDrag = true;
+      }
+    });
+    $(elem).mousedown(function(event) {
+      return isDrag = false;
+    });
+    $(elem).mouseup(function(event) {
+      var iObjects, intersects, newSelected, selectedIndex;
+      if (isDrag) {
+        return true;
+      }
+      intersects = geom.pickObjects(event, scene, camera).unique(function(_arg1) {
+        var object;
+        object = _arg1.object;
+        return object.id;
+      });
+      iObjects = intersects.map(function(_arg1) {
+        var object;
+        object = _arg1.object;
+        return object;
+      }).filter(function(object) {
+        return object.kSelectable !== false;
+      });
+      if (!(iObjects.length > 0)) {
+        return;
+      }
+      if (selected != null) {
+        selectedIndex = iObjects.indexOf(selected);
+      }
+      if (selectedIndex != null) {
+        newSelected = iObjects[(selectedIndex + 1) % iObjects.length];
+      } else {
+        newSelected = iObjects[0];
+      }
+      if (selected != null) {
+        selected.material.color.setHex(0x000000);
+      }
+      newSelected.material.color.setHex(0xFF0000);
+      selected = newSelected;
+      render();
+      return true;
+    });
+    return controls;
+  };
+
+}).call(this);
+
+        return (require['client/control'] = module.exports);
+    };
+};
+require['client/control'].nonce = nonce;
+
+require['client/helpers'] = function() {
+    return new function() {
+        var exports = require['client/helpers'] = this;
+        var module = {exports:exports};
+        var process = require("__browserify_process");
+        var __filename = "client/helpers.coffee";
+        (function() {
+  var extend, flatten, pad, randInt, toAscii;
+
+  this.starts = function(string, literal, start) {
+    return literal === string.substr(start, literal.length);
+  };
+
+  this.ends = function(string, literal, back) {
+    var len;
+    len = literal.length;
+    return literal === string.substr(string.length - len - (back || 0), len);
+  };
+
+  this.compact = function(array) {
+    var item, _i, _len, _results;
+    _results = [];
+    for (_i = 0, _len = array.length; _i < _len; _i++) {
+      item = array[_i];
+      if (item) {
+        _results.push(item);
+      }
+    }
+    return _results;
+  };
+
+  this.count = function(string, substr) {
+    var num, pos;
+    num = pos = 0;
+    if (!substr.length) {
+      return 1 / 0;
+    }
+    while (pos = 1 + string.indexOf(substr, pos)) {
+      num++;
+    }
+    return num;
+  };
+
+  this.merge = function(options, overrides) {
+    return extend(extend({}, options), overrides);
+  };
+
+  this.extend = extend = function(object, properties) {
+    var key, val;
+    for (key in properties) {
+      val = properties[key];
+      object[key] = val;
+    }
+    return object;
+  };
+
+  this.flatten = flatten = function(array) {
+    var element, flattened, _i, _len;
+    flattened = [];
+    for (_i = 0, _len = array.length; _i < _len; _i++) {
+      element = array[_i];
+      if (element instanceof Array) {
+        flattened = flattened.concat(flatten(element));
+      } else {
+        flattened.push(element);
+      }
+    }
+    return flattened;
+  };
+
+  this.del = function(obj, key) {
+    var val;
+    val = obj[key];
+    delete obj[key];
+    return val;
+  };
+
+  this.last = function(array, back) {
+    return array[array.length - (back || 0) - 1];
+  };
+
+  this.toAscii = toAscii = function(str) {
+    return str.replace(/[\u001b\u0080-\uffff]/g, function(ch) {
+      var code;
+      code = ch.charCodeAt(0).toString(16);
+      while (code.length < 4) {
+        code = "0" + code;
+      }
+      return "\\u" + code;
+    });
+  };
+
+  this.escape = function(str, asciiOnly) {
+    if (asciiOnly == null) {
+      asciiOnly = true;
+    }
+    str = str.replace(/[\\\b\f\n\r\t\x22\u2028\u2029\0]/g, function(s) {
+      switch (s) {
+        case "\\":
+          return "\\\\";
+        case "\b":
+          return "\\b";
+        case "\f":
+          return "\\f";
+        case "\n":
+          return "\\n";
+        case "\r":
+          return "\\r";
+        case "\u2028":
+          return "\\u2028";
+        case "\u2029":
+          return "\\u2029";
+        case '"':
+          return "\\\"";
+        case "\0":
+          return "\\0";
+        default:
+          return s;
+      }
+    });
+    if (asciiOnly) {
+      str = toAscii(str);
+    }
+    return str;
+  };
+
+  this.htmlEscape = function(txt) {
+    return String(txt).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  };
+
+  this.pad = pad = function(_arg, str) {
+    var char, left, right;
+    left = _arg.left, right = _arg.right, char = _arg.char;
+    str = '' + str;
+    if (char == null) {
+      char = ' ';
+    }
+    if ((right != null) && right > str.length) {
+      return Array(right - str.length + 1).join(char) + str;
+    } else if (left > str.length) {
+      return str + Array(left - str.length + 1).join(char);
+    }
+    return str;
+  };
+
+  this.randInt = randInt = function(max) {
+    return Math.floor(Math.random() * max);
+  };
+
+  this.randid = function(len) {
+    var i, possible;
+    if (len == null) {
+      len = 12;
+    }
+    possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    return ((function() {
+      var _i, _results;
+      _results = [];
+      for (i = _i = 0; 0 <= len ? _i < len : _i > len; i = 0 <= len ? ++_i : --_i) {
+        _results.push(possible.charAt(Math.floor(Math.random() * possible.length)));
+      }
+      return _results;
+    })()).join('');
+  };
+
+  this.randomColor = function(_arg) {
+    var alpha;
+    alpha = (_arg != null ? _arg : {}).alpha;
+    if (alpha != null) {
+      return "rgba(" + (randInt(256)) + "," + (randInt(256)) + "," + (randInt(256)) + "," + alpha + ")";
+    } else {
+      return "rgb(" + (randInt(256)) + "," + (randInt(256)) + "," + (randInt(256)) + ")";
+    }
+  };
+
+  this.weave = function(items, join, options) {
+    var i, item, itemsLength, result, _i, _len, _ref;
+    result = [];
+    itemsLength = items.length;
+    for (i = _i = 0, _len = items.length; _i < _len; i = ++_i) {
+      item = items[i];
+      if (options != null ? options.flattenItems : void 0) {
+        [].splice.apply(result, [(_ref = result.length), 9e9].concat(item)), item;
+      } else {
+        result.push(item);
+      }
+      if (i < itemsLength - 1) {
+        result.push(join);
+      }
+    }
+    return result;
+  };
+
+  if (Array.prototype.weave == null) {
+    Object.defineProperty(Array.prototype, 'weave', {
+      configurable: false,
+      enumerable: false,
+      value: function(join, options) {
+        var i, item, length, result, _i, _len, _ref;
+        result = [];
+        length = this.length;
+        for (i = _i = 0, _len = this.length; _i < _len; i = ++_i) {
+          item = this[i];
+          if (options != null ? options.flattenItems : void 0) {
+            [].splice.apply(result, [(_ref = result.length), 9e9].concat(item)), item;
+          } else {
+            result.push(item);
+          }
+          if (i < length - 1) {
+            result.push(join);
+          }
+        }
+        return result;
+      }
+    });
+  }
+
+  this.hasWebGL = function() {
+    try {
+      return (window.WebGLRenderingContext != null) && (document.createElement('canvas').getContext('experimental-webgl') != null);
+    } catch (e) {
+      return false;
+    }
+  };
+
+}).call(this);
+
+        return (require['client/helpers'] = module.exports);
+    };
+};
+require['client/helpers'].nonce = nonce;
+
+require['client'] = function() {
     return new function() {
         var exports = require['client'] = this;
         var module = {exports:exports};
         var process = require("__browserify_process");
         var __filename = "client/index.coffee";
         (function() {
+  var THREE, View, animate, camera, controls, hasWebGL, init, render, renderer, scene, _ref;
 
-  alert("hi!");
+  View = require('client/view').View;
+
+  hasWebGL = require('client/helpers').hasWebGL;
+
+  THREE = ((_ref = window.THREE) != null ? _ref : window.THREE = require('three'));
+
+  require('client/three_trackball');
+
+  window._typeface_js = {
+    faces: THREE.FontUtils.faces,
+    loadFace: THREE.FontUtils.loadFace
+  };
+
+  camera = scene = renderer = void 0;
+
+  controls = void 0;
+
+  init = function() {
+    var geometry, grid, material, mesh;
+    if (hasWebGL()) {
+      renderer = new THREE.WebGLRenderer();
+    } else {
+      renderer = new THREE.CanvasRenderer();
+    }
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+    scene = new THREE.Scene();
+    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 10000);
+    camera.position.z = 1000;
+    geometry = new THREE.TextGeometry("test", {
+      size: 200,
+      height: 0,
+      curveSegments: 0,
+      font: "helvetiker",
+      weight: "bold",
+      style: "normal"
+    });
+    material = new THREE.MeshBasicMaterial({
+      color: 0x000000,
+      wireframe: true
+    });
+    mesh = new THREE.Mesh(geometry, material);
+    scene.add(mesh);
+    grid = new THREE.Mesh(new THREE.PlaneGeometry(1000, 1000, 20, 20), new THREE.MeshBasicMaterial({
+      color: 0xAAAAEE,
+      wireframe: true
+    }));
+    grid.kSelectable = false;
+    scene.add(grid);
+    return controls = require('client/control').installControls({
+      camera: camera,
+      elem: renderer.domElement,
+      render: render
+    });
+  };
+
+  animate = function() {
+    requestAnimationFrame(animate);
+    return controls.update();
+  };
+
+  render = function() {
+    return renderer.render(scene, camera);
+  };
+
+  $(function() {
+    init();
+    animate();
+    return $(document.body).append(require('client/widgets').openLocalFileWidget(function(err, data) {
+      console.log(err, data);
+      return render();
+    }).el);
+  });
+
+  module.exports = function() {
+    return this;
+  };
 
 }).call(this);
 
@@ -29,6 +415,654 @@
     };
 };
 require['client'].nonce = nonce;
+
+require['client/view'] = function() {
+    return new function() {
+        var exports = require['client/view'] = this;
+        var module = {exports:exports};
+        var process = require("__browserify_process");
+        var __filename = "client/view.coffee";
+        
+/*
+*/
+
+
+(function() {
+  var View, randomColor;
+
+  randomColor = require('client/helpers').randomColor;
+
+  this.View = View = (function() {
+
+    function View(_arg) {
+      var _ref, _ref1, _ref2, _ref3, _ref4, _ref5, _ref6, _ref7, _ref8;
+      _ref = _arg != null ? _arg : {}, this.el = _ref.el, this.padding = _ref.padding, this.width = _ref.width, this.height = _ref.height, this.top = _ref.top, this.left = _ref.left, this.border = _ref.border, this.background = _ref.background;
+      if ((_ref1 = this.padding) == null) {
+        this.padding = 10;
+      }
+      if ((_ref2 = this.width) == null) {
+        this.width = 320;
+      }
+      if ((_ref3 = this.height) == null) {
+        this.height = 200;
+      }
+      if ((_ref4 = this.top) == null) {
+        this.top = 10;
+      }
+      if ((_ref5 = this.left) == null) {
+        this.left = 10;
+      }
+      if ((_ref6 = this.border) == null) {
+        this.border = 'none';
+      }
+      if ((_ref7 = this.background) == null) {
+        this.background = randomColor({
+          alpha: 0.8
+        });
+      }
+      if ((_ref8 = this.el) == null) {
+        this.el = $('<div/>');
+      }
+      this.el.addClass('borderBox');
+      this.el.css({
+        position: 'absolute',
+        display: 'block'
+      });
+      this.el.css({
+        wordWrap: 'break-word',
+        whiteSpace: 'pre-wrap'
+      });
+      this.repaint();
+    }
+
+    View.prototype.repaint = function() {
+      var height, width;
+      width = this.width - this.padding * 2;
+      height = this.height - this.padding * 2;
+      this.el.css({
+        padding: this.padding
+      });
+      this.el.css({
+        width: this.width,
+        height: this.height,
+        top: this.top,
+        left: this.left,
+        border: this.border,
+        background: this.background
+      });
+      return this;
+    };
+
+    View.prototype.write = function(text) {
+      this.el.append($('<span/>').text(text));
+      return this;
+    };
+
+    View.prototype.append = function(el) {
+      this.el.append(el);
+      return this;
+    };
+
+    View.prototype.splitHorizontal = function() {
+      return {
+        left: left,
+        right: right
+      };
+    };
+
+    View.prototype.splitVertical = function() {
+      return {
+        top: top,
+        bottom: bottom
+      };
+    };
+
+    return View;
+
+  })();
+
+}).call(this);
+
+        return (require['client/view'] = module.exports);
+    };
+};
+require['client/view'].nonce = nonce;
+
+require['client/widgets'] = function() {
+    return new function() {
+        var exports = require['client/widgets'] = this;
+        var module = {exports:exports};
+        var process = require("__browserify_process");
+        var __filename = "client/widgets.coffee";
+        (function() {
+  var View, fileInputEl;
+
+  View = require('client/view').View;
+
+  fileInputEl = function(cb) {
+    var inputEl;
+    if (window.File && window.FileReader && window.FileList && window.Blob) {
+      inputEl = $('<input type="file" name="files[]" multiple />');
+      inputEl.bind('change', cb);
+      return inputEl;
+    } else {
+      alert('The File APIs are not fully supported in this browser.');
+      return void 0;
+    }
+  };
+
+  this.openLocalFileWidget = function(options, fileCb) {
+    var responseType, singleUse, wgt, _ref, _ref1, _ref2;
+    if (fileCb == null) {
+      _ref = [null, options], options = _ref[0], fileCb = _ref[1];
+    }
+    responseType = (_ref1 = options != null ? options.responseType : void 0) != null ? _ref1 : 'arraybuffer';
+    singleUse = (_ref2 = options != null ? options.singleUse : void 0) != null ? _ref2 : false;
+    wgt = new View({
+      background: 'rgba(129, 145, 142, 0.8)'
+    });
+    wgt.write('import: ');
+    wgt.append(fileInputEl(function(event) {
+      var file, files, _i, _len, _results;
+      if (singleUse) {
+        $(event.target).attr('disabled', 'disabled');
+      }
+      files = event.target.files;
+      _results = [];
+      for (_i = 0, _len = files.length; _i < _len; _i++) {
+        file = files[_i];
+        _results.push((function(file) {
+          var fr;
+          fr = new FileReader();
+          if (responseType === 'arraybuffer') {
+            fr.readAsArrayBuffer(file);
+          } else if (responseType === 'binarystring') {
+            fr.readAsBinaryString(file);
+          } else {
+            throw new Error("Unexpected responseType: " + responseType);
+          }
+          return fr.onload = function(e) {
+            return fileCb(null, e.target.result);
+          };
+        })(file));
+      }
+      return _results;
+    }));
+    return wgt;
+  };
+
+}).call(this);
+
+        return (require['client/widgets'] = module.exports);
+    };
+};
+require['client/widgets'].nonce = nonce;
+
+require['client/three_trackball'] = function() {
+    return new function() {
+        var exports = require['client/three_trackball'] = this;
+        var module = {exports:exports};
+        var process = require("__browserify_process");
+        var __filename = "client/three_trackball.js";
+        /**
+ * @author Eberhard Graether / http://egraether.com/
+ */
+
+THREE.TrackballControls = function ( object, domElement ) {
+
+	THREE.EventDispatcher.call( this );
+
+	var _this = this;
+	var STATE = { NONE: -1, ROTATE: 0, ZOOM: 1, PAN: 2 };
+
+	this.object = object;
+	this.domElement = ( domElement !== undefined ) ? domElement : document;
+
+	// API
+
+	this.enabled = true;
+
+	this.screen = { width: 0, height: 0, offsetLeft: 0, offsetTop: 0 };
+	this.radius = ( this.screen.width + this.screen.height ) / 4;
+
+	this.rotateSpeed = 1.0;
+	this.zoomSpeed = 1.2;
+	this.panSpeed = 0.3;
+
+	this.noRotate = false;
+	this.noZoom = false;
+	this.noPan = false;
+
+	this.staticMoving = false;
+	this.dynamicDampingFactor = 0.2;
+
+	this.minDistance = 0;
+	this.maxDistance = Infinity;
+
+	this.keys = [ 65 /*A*/, 83 /*S*/, 68 /*D*/ ];
+
+	// internals
+
+	this.target = new THREE.Vector3();
+
+	var lastPosition = new THREE.Vector3();
+
+	var _state = STATE.NONE,
+	_prevState = STATE.NONE,
+
+	_eye = new THREE.Vector3(),
+
+	_rotateStart = new THREE.Vector3(),
+	_rotateEnd = new THREE.Vector3(),
+
+	_zoomStart = new THREE.Vector2(),
+	_zoomEnd = new THREE.Vector2(),
+
+	_panStart = new THREE.Vector2(),
+	_panEnd = new THREE.Vector2();
+
+	// events
+
+	var changeEvent = { type: 'change' };
+
+
+	// methods
+
+	this.handleResize = function () {
+
+		this.screen.width = window.innerWidth;
+		this.screen.height = window.innerHeight;
+
+		this.screen.offsetLeft = 0;
+		this.screen.offsetTop = 0;
+
+		this.radius = ( this.screen.width + this.screen.height ) / 4;
+	};
+
+	this.handleEvent = function ( event ) {
+
+		if ( typeof this[ event.type ] == 'function' ) {
+
+			this[ event.type ]( event );
+
+		}
+
+	};
+
+	this.getMouseOnScreen = function ( clientX, clientY ) {
+
+		return new THREE.Vector2(
+			( clientX - _this.screen.offsetLeft ) / _this.radius * 0.5,
+			( clientY - _this.screen.offsetTop ) / _this.radius * 0.5
+		);
+
+	};
+
+	this.getMouseProjectionOnBall = function ( clientX, clientY ) {
+
+		var mouseOnBall = new THREE.Vector3(
+			( clientX - _this.screen.width * 0.5 - _this.screen.offsetLeft ) / _this.radius,
+			( _this.screen.height * 0.5 + _this.screen.offsetTop - clientY ) / _this.radius,
+			0.0
+		);
+
+		var length = mouseOnBall.length();
+
+		if ( length > 1.0 ) {
+
+			mouseOnBall.normalize();
+
+		} else {
+
+			mouseOnBall.z = Math.sqrt( 1.0 - length * length );
+
+		}
+
+		_eye.copy( _this.object.position ).sub( _this.target );
+
+		var projection = _this.object.up.clone().setLength( mouseOnBall.y );
+		projection.add( _this.object.up.clone().cross( _eye ).setLength( mouseOnBall.x ) );
+		projection.add( _eye.setLength( mouseOnBall.z ) );
+
+		return projection;
+
+	};
+
+	this.rotateCamera = function () {
+
+		var angle = Math.acos( _rotateStart.dot( _rotateEnd ) / _rotateStart.length() / _rotateEnd.length() );
+
+		if ( angle ) {
+
+			var axis = ( new THREE.Vector3() ).crossVectors( _rotateStart, _rotateEnd ).normalize(),
+				quaternion = new THREE.Quaternion();
+
+			angle *= _this.rotateSpeed;
+
+			quaternion.setFromAxisAngle( axis, -angle );
+
+      _eye.applyQuaternion(quaternion);
+      _this.object.up.applyQuaternion(quaternion);
+      _rotateEnd.applyQuaternion(quaternion);
+
+			if ( _this.staticMoving ) {
+
+				_rotateStart.copy( _rotateEnd );
+
+			} else {
+
+				quaternion.setFromAxisAngle( axis, angle * ( _this.dynamicDampingFactor - 1.0 ) );
+        _rotateStart.applyQuaternion(quaternion);
+
+			}
+
+		}
+
+	};
+
+	this.zoomCamera = function () {
+
+		var factor = 1.0 + ( _zoomEnd.y - _zoomStart.y ) * _this.zoomSpeed;
+
+		if ( factor !== 1.0 && factor > 0.0 ) {
+
+			_eye.multiplyScalar( factor );
+
+			if ( _this.staticMoving ) {
+
+				_zoomStart.copy( _zoomEnd );
+
+			} else {
+
+				_zoomStart.y += ( _zoomEnd.y - _zoomStart.y ) * this.dynamicDampingFactor;
+
+			}
+
+		}
+
+	};
+
+	this.panCamera = function () {
+
+		var mouseChange = _panEnd.clone().sub( _panStart );
+
+		if ( mouseChange.lengthSq() ) {
+
+			mouseChange.multiplyScalar( _eye.length() * _this.panSpeed );
+
+			var pan = _eye.clone().cross( _this.object.up ).setLength( mouseChange.x );
+			pan.add( _this.object.up.clone().setLength( mouseChange.y ) );
+
+			_this.object.position.add( pan );
+			_this.target.add( pan );
+
+			if ( _this.staticMoving ) {
+
+				_panStart = _panEnd;
+
+			} else {
+
+				_panStart.add( mouseChange.subVectors( _panEnd, _panStart ).multiplyScalar( _this.dynamicDampingFactor ) );
+
+			}
+
+		}
+
+	};
+
+	this.checkDistances = function () {
+
+		if ( !_this.noZoom || !_this.noPan ) {
+
+			if ( _this.object.position.lengthSq() > _this.maxDistance * _this.maxDistance ) {
+
+				_this.object.position.setLength( _this.maxDistance );
+
+			}
+
+			if ( _eye.lengthSq() < _this.minDistance * _this.minDistance ) {
+
+				_this.object.position.addVectors( _this.target, _eye.setLength( _this.minDistance ) );
+
+			}
+
+		}
+
+	};
+
+	this.update = function () {
+
+		_eye.copy( _this.object.position ).sub( _this.target );
+
+		if ( !_this.noRotate ) {
+
+			_this.rotateCamera();
+
+		}
+
+		if ( !_this.noZoom ) {
+
+			_this.zoomCamera();
+
+		}
+
+		if ( !_this.noPan ) {
+
+			_this.panCamera();
+
+		}
+
+		_this.object.position.addVectors( _this.target, _eye );
+
+		_this.checkDistances();
+
+		_this.object.lookAt( _this.target );
+
+		if ( lastPosition.distanceToSquared( _this.object.position ) > 0 ) {
+
+			_this.dispatchEvent( changeEvent );
+
+			lastPosition.copy( _this.object.position );
+
+		}
+
+	};
+
+	// listeners
+
+	function keydown( event ) {
+
+		if ( ! _this.enabled ) return;
+
+		window.removeEventListener( 'keydown', keydown );
+
+		_prevState = _state;
+
+		if ( _state !== STATE.NONE ) {
+
+			return;
+
+		} else if ( event.keyCode === _this.keys[ STATE.ROTATE ] && !_this.noRotate ) {
+
+			_state = STATE.ROTATE;
+
+		} else if ( event.keyCode === _this.keys[ STATE.ZOOM ] && !_this.noZoom ) {
+
+			_state = STATE.ZOOM;
+
+		} else if ( event.keyCode === _this.keys[ STATE.PAN ] && !_this.noPan ) {
+
+			_state = STATE.PAN;
+
+		}
+
+	}
+
+	function keyup( event ) {
+
+		if ( ! _this.enabled ) return;
+
+		_state = _prevState;
+
+		window.addEventListener( 'keydown', keydown, false );
+
+	}
+
+	function mousedown( event ) {
+
+		if ( ! _this.enabled ) return;
+
+		event.preventDefault();
+		event.stopPropagation();
+
+		if ( _state === STATE.NONE ) {
+
+			_state = event.button;
+
+		}
+
+		if ( _state === STATE.ROTATE && !_this.noRotate ) {
+
+			_rotateStart = _rotateEnd = _this.getMouseProjectionOnBall( event.clientX, event.clientY );
+
+		} else if ( _state === STATE.ZOOM && !_this.noZoom ) {
+
+			_zoomStart = _zoomEnd = _this.getMouseOnScreen( event.clientX, event.clientY );
+
+		} else if ( _state === STATE.PAN && !_this.noPan ) {
+
+			_panStart = _panEnd = _this.getMouseOnScreen( event.clientX, event.clientY );
+
+		}
+
+		document.addEventListener( 'mousemove', mousemove, false );
+		document.addEventListener( 'mouseup', mouseup, false );
+
+	}
+
+	function mousemove( event ) {
+
+		if ( ! _this.enabled ) return;
+
+		if ( _state === STATE.ROTATE && !_this.noRotate ) {
+
+			_rotateEnd = _this.getMouseProjectionOnBall( event.clientX, event.clientY );
+
+		} else if ( _state === STATE.ZOOM && !_this.noZoom ) {
+
+			_zoomEnd = _this.getMouseOnScreen( event.clientX, event.clientY );
+
+		} else if ( _state === STATE.PAN && !_this.noPan ) {
+
+			_panEnd = _this.getMouseOnScreen( event.clientX, event.clientY );
+
+		}
+
+	}
+
+	function mouseup( event ) {
+
+		if ( ! _this.enabled ) return;
+
+		event.preventDefault();
+		event.stopPropagation();
+
+		_state = STATE.NONE;
+
+		document.removeEventListener( 'mousemove', mousemove );
+		document.removeEventListener( 'mouseup', mouseup );
+
+	}
+
+	function mousewheel( event ) {
+
+		if ( ! _this.enabled ) return;
+
+		event.preventDefault();
+		event.stopPropagation();
+
+		var delta = 0;
+
+		if ( event.wheelDelta ) { // WebKit / Opera / Explorer 9
+
+			delta = event.wheelDelta / 40;
+
+		} else if ( event.detail ) { // Firefox
+
+			delta = - event.detail / 3;
+
+		}
+
+		_zoomStart.y += ( 1 / delta ) * 0.05;
+
+	}
+
+	function touchstart( event ) {
+
+		if ( ! _this.enabled ) return;
+
+		event.preventDefault();
+
+		switch ( event.touches.length ) {
+
+			case 1:
+				_rotateStart = _rotateEnd = _this.getMouseProjectionOnBall( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY );
+				break;
+			case 2:
+				_zoomStart = _zoomEnd = _this.getMouseOnScreen( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY );
+				break;
+			case 3:
+				_panStart = _panEnd = _this.getMouseOnScreen( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY );
+				break;
+
+		}
+
+	}
+
+	function touchmove( event ) {
+
+		if ( ! _this.enabled ) return;
+
+		event.preventDefault();
+
+		switch ( event.touches.length ) {
+
+			case 1:
+				_rotateEnd = _this.getMouseProjectionOnBall( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY );
+				break;
+			case 2:
+				_zoomEnd = _this.getMouseOnScreen( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY );
+				break;
+			case 3:
+				_panEnd = _this.getMouseOnScreen( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY );
+				break;
+
+		}
+
+	}
+
+	this.domElement.addEventListener( 'contextmenu', function ( event ) { event.preventDefault(); }, false );
+
+	this.domElement.addEventListener( 'mousedown', mousedown, false );
+
+	this.domElement.addEventListener( 'mousewheel', mousewheel, false );
+	this.domElement.addEventListener( 'DOMMouseScroll', mousewheel, false ); // firefox
+
+	this.domElement.addEventListener( 'touchstart', touchstart, false );
+	this.domElement.addEventListener( 'touchend', touchstart, false );
+	this.domElement.addEventListener( 'touchmove', touchmove, false );
+
+	window.addEventListener( 'keydown', keydown, false );
+	window.addEventListener( 'keyup', keyup, false );
+
+	this.handleResize();
+
+};
+
+        return (require['client/three_trackball'] = module.exports);
+    };
+};
+require['client/three_trackball'].nonce = nonce;
 
 require['async'] = function() {
     return new function() {
@@ -40010,6 +41044,6 @@ exports.inherits = function(ctor, superCtor) {
 require['util'].nonce = nonce;
 
 
-        require('client')();
+        window.require = require; require('client')();
     })();
 })(this);

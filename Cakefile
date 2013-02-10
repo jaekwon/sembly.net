@@ -18,7 +18,10 @@ task 'browser', 'Package javascript for browser', ->
     {name:'client',          path:'client/**.js'}
     {name:'async',           path:'node_modules/async/lib/async.js'}
     {name:'three',           path:'node_modules/three/three.js'}
-  ], "window.require = require; require('client')();"
+    {name:'voxel-geometry',  path:'node_modules/voxel-geometry/*.js'}
+    {name:'binary-xhr',      path:'node_modules/binary-xhr/*.js'}
+    {name:'inherits',        path:'static/javascripts/empty.js'}
+  ], "window.require = require; require('client')();", minimize:no
   fs.writeFileSync 'static/javascripts/client.js', code, 'utf8'
   fs.writeFileSync 'static/javascripts/client.min.js', minCode, 'utf8' if minCode?
 

@@ -14,7 +14,9 @@
       "coffeemugg":   "0.0.7",
       "marked":       ">= 0.2.7",
       "three":        "0.55.0",
-      "demodule":     "0.0.1"
+      "demodule":     "0.0.2",
+      "voxel-geometry": "0.0.2",
+      "binary-xhr":   ""
     },
   "keywords": [],
   "engines": {"node": ">= 0.8.2"},

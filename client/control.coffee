@@ -41,3 +41,21 @@
     return true
 
   return controls
+
+@pickObjects = (event, scene, camera) ->
+  {target, offsetX, offsetY} = event
+  projector = new THREE.Projector()
+  # map 0.0~1.0 to -1.0~1.0
+  vector_x = offsetX / target.width * 2.0 - 1.0
+  vector_y = offsetY / target.height * 2.0 - 1.0
+  vector = new THREE.Vector3( vector_x, -vector_y, 0.5 )
+  projector.unprojectVector( vector, camera )
+  # Comments below for debugging the raycaster
+  # vcopy = vector.clone().subSelf( camera.position ).normalize().multiplyScalar(1000).addSelf( camera.position )
+  raycaster = new THREE.Raycaster( camera.position, vector.subSelf( camera.position ).normalize() )
+  # raygeom = new THREE.Geometry()
+  # raygeom.vertices.push camera.position
+  # raygeom.vertices.push vcopy2
+  # rayline = new THREE.Line( raygeom, new THREE.LineBasicMaterial( {color: 0x0} ) )
+  # scene.add rayline
+  return raycaster.intersectObjects( scene.children )

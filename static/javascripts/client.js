@@ -1,24 +1,46 @@
 (function(root) {
     return (function() {
+
         var nonce = {nonce:'nonce'};
-        function require(path){
+        var currentAbsModulePath = '';
+
+        function require( path ) {
+          // resolve relative path
+          if (path.substr(0,2) === './') {
+            path = currentAbsModulePath + path.substr(1);
+          }
+          //
           var module = require[path];
           if (!module) {
             throw new Error("Can't find module "+path);
           }
+          // if we haven't run the module yet
           if (module.nonce === nonce) {
+            var oldAbsModulePath = currentAbsModulePath;
+            currentAbsModulePath = pathDir(path);
             module = module();
+            currentAbsModulePath = oldAbsModulePath;
             return module;
           } else {
             return module;
           }
         }
+
+        function pathDir( path ) {
+          var lastSlash = path.lastIndexOf("/");
+          if (lastSlash === -1) {
+            return path;
+          } else {
+            return path.substring(0,lastSlash);
+          }
+        }
+
         require['client/control'] = function() {
     return new function() {
         var exports = require['client/control'] = this;
         var module = {exports:exports};
         var process = require("__browserify_process");
-        var __filename = "client/control.coffee";
+        var __filename = "/Users/jae/workspace/src/sembly.net/client/control.coffee";
         (function() {
 
   this.installControls = function(_arg) {
@@ -83,6 +105,18 @@
     return controls;
   };
 
+  this.pickObjects = function(event, scene, camera) {
+    var offsetX, offsetY, projector, raycaster, target, vector, vector_x, vector_y;
+    target = event.target, offsetX = event.offsetX, offsetY = event.offsetY;
+    projector = new THREE.Projector();
+    vector_x = offsetX / target.width * 2.0 - 1.0;
+    vector_y = offsetY / target.height * 2.0 - 1.0;
+    vector = new THREE.Vector3(vector_x, -vector_y, 0.5);
+    projector.unprojectVector(vector, camera);
+    raycaster = new THREE.Raycaster(camera.position, vector.subSelf(camera.position).normalize());
+    return raycaster.intersectObjects(scene.children);
+  };
+
 }).call(this);
 
         return (require['client/control'] = module.exports);
@@ -95,7 +129,7 @@ require['client/helpers'] = function() {
         var exports = require['client/helpers'] = this;
         var module = {exports:exports};
         var process = require("__browserify_process");
-        var __filename = "client/helpers.coffee";
+        var __filename = "/Users/jae/workspace/src/sembly.net/client/helpers.coffee";
         (function() {
   var extend, flatten, pad, randInt, toAscii;
 
@@ -327,9 +361,9 @@ require['client'] = function() {
         var exports = require['client'] = this;
         var module = {exports:exports};
         var process = require("__browserify_process");
-        var __filename = "client/index.coffee";
+        var __filename = "/Users/jae/workspace/src/sembly.net/client/index.coffee";
         (function() {
-  var THREE, View, animate, camera, controls, hasWebGL, init, render, renderer, scene, _ref;
+  var THREE, View, animate, camera, controls, hasWebGL, init, render, renderer, scene, shaderMaterial, _ref;
 
   View = require('client/view').View;
 
@@ -346,10 +380,12 @@ require['client'] = function() {
 
   camera = scene = renderer = void 0;
 
+  shaderMaterial = void 0;
+
   controls = void 0;
 
   init = function() {
-    var geometry, grid, material, mesh;
+    var fragmentShader, geometry, grid, mesh, vertexShader;
     if (hasWebGL()) {
       renderer = new THREE.WebGLRenderer();
     } else {
@@ -360,6 +396,12 @@ require['client'] = function() {
     scene = new THREE.Scene();
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 10000);
     camera.position.z = 1000;
+    vertexShader = "// create a shared variable for the\n// VS and FS containing the normal\nvarying vec3 vNormal;\n\nvoid main() {\n\n    // set the vNormal value with\n    // the attribute value passed\n    // in by Three.js\n    vNormal = normal;\n\n    gl_Position = projectionMatrix *\n                  modelViewMatrix *\n                  vec4(position,1.0);\n}";
+    fragmentShader = "// same name and type as VS\nvarying vec3 vNormal;\n\nvoid main() {\n\n    // calc the dot product and clamp\n    // 0 -> 1 rather than -1 -> 1\n    vec3 light = vec3(0.5,0.2,1.0);\n      \n    // ensure it's normalized\n    light = normalize(light);\n  \n    // calculate the dot product of\n    // the light to the vertex normal\n    float dProd = max(0.0, dot(vNormal, light));\n  \n    // feed into our frag colour\n    gl_FragColor = vec4(dProd, dProd, dProd, 1.0);\n  \n}";
+    shaderMaterial = new THREE.ShaderMaterial({
+      vertexShader: vertexShader,
+      fragmentShader: fragmentShader
+    });
     geometry = new THREE.TextGeometry("test", {
       size: 200,
       height: 0,
@@ -368,11 +410,7 @@ require['client'] = function() {
       weight: "bold",
       style: "normal"
     });
-    material = new THREE.MeshBasicMaterial({
-      color: 0x000000,
-      wireframe: true
-    });
-    mesh = new THREE.Mesh(geometry, material);
+    mesh = new THREE.Mesh(geometry, shaderMaterial);
     scene.add(mesh);
     grid = new THREE.Mesh(new THREE.PlaneGeometry(1000, 1000, 20, 20), new THREE.MeshBasicMaterial({
       color: 0xAAAAEE,
@@ -399,8 +437,16 @@ require['client'] = function() {
   $(function() {
     init();
     animate();
-    return $(document.body).append(require('client/widgets').openLocalFileWidget(function(err, data) {
-      console.log(err, data);
+    return $(document.body).append(require('client/widgets').openLocalFileWidget({
+      responseType: 'arraybuffer'
+    }, function(err, data) {
+      var geometry, mesh;
+      if (err != null) {
+        console.log(err, data);
+      }
+      geometry = require('voxel-geometry').parsers.stl.parse(data);
+      mesh = new THREE.Mesh(geometry, shaderMaterial);
+      scene.add(mesh);
       return render();
     }).el);
   });
@@ -421,7 +467,7 @@ require['client/view'] = function() {
         var exports = require['client/view'] = this;
         var module = {exports:exports};
         var process = require("__browserify_process");
-        var __filename = "client/view.coffee";
+        var __filename = "/Users/jae/workspace/src/sembly.net/client/view.coffee";
         
 /*
 */
@@ -533,7 +579,7 @@ require['client/widgets'] = function() {
         var exports = require['client/widgets'] = this;
         var module = {exports:exports};
         var process = require("__browserify_process");
-        var __filename = "client/widgets.coffee";
+        var __filename = "/Users/jae/workspace/src/sembly.net/client/widgets.coffee";
         (function() {
   var View, fileInputEl;
 
@@ -603,7 +649,7 @@ require['client/three_trackball'] = function() {
         var exports = require['client/three_trackball'] = this;
         var module = {exports:exports};
         var process = require("__browserify_process");
-        var __filename = "client/three_trackball.js";
+        var __filename = "/Users/jae/workspace/src/sembly.net/client/three_trackball.js";
         /**
  * @author Eberhard Graether / http://egraether.com/
  */
@@ -37583,6 +37629,331 @@ if (typeof exports !== 'undefined') {
     };
 };
 require['three'].nonce = nonce;
+
+require['voxel-geometry'] = function() {
+    return new function() {
+        var exports = require['voxel-geometry'] = this;
+        var module = {exports:exports};
+        var process = require("__browserify_process");
+        var __filename = "/Users/jae/workspace/src/voxel-geometry/index.js";
+        // Generated by CoffeeScript 1.3.3
+(function() {
+  var binaryXHR, stlParser;
+
+  stlParser = require('./stl_parser');
+
+  binaryXHR = require('binary-xhr');
+
+  this.parsers = {
+    'stl': stlParser
+  };
+
+  this.loadGeometry = function(location, callback) {
+    if (typeof location === 'string') {
+      return binaryXHR(location, function(error, data) {
+        var geometry;
+        if (error) {
+          callback(error);
+        }
+        geometry = stlParser.parse(data);
+        return callback(null, geometry);
+      });
+    } else {
+      throw new Error("Dunno how to load geometry with location " + location + " (" + (typeof location) + ")");
+    }
+  };
+
+  this.voxelateMesh = function(game, mesh) {
+    var THREE, consumeJob, cubeSize, end, geometry, jobs, line, material, maxX, maxXQ, maxY, maxYQ, maxZ, maxZQ, minX, minXQ, minY, minYQ, minZ, minZQ, start, vertex, worldVertex, x, xQ, y, yQ, _i, _j, _k, _len, _ref;
+    THREE = game.THREE;
+    minX = minY = minZ = maxX = maxY = maxZ = void 0;
+    cubeSize = game.cubeSize;
+    mesh.updateMatrixWorld();
+    _ref = mesh.geometry.vertices;
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      vertex = _ref[_i];
+      worldVertex = vertex.clone();
+      mesh.localToWorld(worldVertex);
+      if (worldVertex.x < minX || minX === void 0) {
+        minX = worldVertex.x;
+      }
+      if (worldVertex.y < minY || minY === void 0) {
+        minY = worldVertex.y;
+      }
+      if (worldVertex.z < minZ || minZ === void 0) {
+        minZ = worldVertex.z;
+      }
+      if (worldVertex.x > maxX || maxX === void 0) {
+        maxX = worldVertex.x;
+      }
+      if (worldVertex.y > maxY || maxY === void 0) {
+        maxY = worldVertex.y;
+      }
+      if (worldVertex.z > maxZ || maxZ === void 0) {
+        maxZ = worldVertex.z;
+      }
+    }
+    minXQ = Math.floor(minX / cubeSize);
+    minYQ = Math.floor(minY / cubeSize);
+    minZQ = Math.floor(minZ / cubeSize);
+    maxXQ = Math.ceil(maxX / cubeSize);
+    maxYQ = Math.ceil(maxY / cubeSize);
+    maxZQ = Math.ceil(maxZ / cubeSize);
+    jobs = [];
+    for (yQ = _j = minYQ; minYQ <= maxYQ ? _j < maxYQ : _j > maxYQ; yQ = minYQ <= maxYQ ? ++_j : --_j) {
+      y = yQ * cubeSize;
+      for (xQ = _k = minXQ; minXQ <= maxXQ ? _k < maxXQ : _k > maxXQ; xQ = minXQ <= maxXQ ? ++_k : --_k) {
+        x = xQ * cubeSize;
+        start = new THREE.Vector3(x + cubeSize / 2, y + cubeSize / 2, minZ);
+        end = new THREE.Vector3(x + cubeSize / 2, y + cubeSize / 2, maxZ);
+        material = new THREE.LineBasicMaterial({
+          color: 0xFFFFFF
+        });
+        geometry = new THREE.Geometry();
+        geometry.vertices.push(start);
+        geometry.vertices.push(end);
+        line = new THREE.Line(geometry, material);
+        game.scene.add(line);
+        jobs.push({
+          yQ: yQ,
+          y: y,
+          xQ: xQ,
+          x: x,
+          line: line,
+          start: start,
+          end: end
+        });
+      }
+    }
+    consumeJob = function() {
+      var inside, intersect, intersectZ, intersectZQs, intersectZs, intersects, raycaster, z, zQ, _l, _ref1;
+      _ref1 = jobs.shift(), yQ = _ref1.yQ, y = _ref1.y, xQ = _ref1.xQ, x = _ref1.x, line = _ref1.line, start = _ref1.start, end = _ref1.end;
+      game.scene.remove(line);
+      raycaster = new THREE.Raycaster(start, new THREE.Vector3(0, 0, 1));
+      intersects = raycaster.intersectObject(mesh);
+      if (intersects.length > 0) {
+        if (intersects.length % 2 === 1) {
+          console.log("Intersects.length was an odd number. :(");
+          return;
+        }
+        intersectZs = (function() {
+          var _l, _len1, _results;
+          _results = [];
+          for (_l = 0, _len1 = intersects.length; _l < _len1; _l++) {
+            intersect = intersects[_l];
+            _results.push(intersect.point.z);
+          }
+          return _results;
+        })();
+        intersectZQs = (function() {
+          var _l, _len1, _results;
+          _results = [];
+          for (_l = 0, _len1 = intersectZs.length; _l < _len1; _l++) {
+            intersectZ = intersectZs[_l];
+            _results.push(Math.floor(intersectZ / cubeSize));
+          }
+          return _results;
+        })();
+        inside = false;
+        material = 1;
+        for (zQ = _l = minZQ; minZQ <= maxZQ ? _l < maxZQ : _l > maxZQ; zQ = minZQ <= maxZQ ? ++_l : --_l) {
+          z = zQ * cubeSize;
+          if (intersectZQs.length === 0 || intersectZQs[0] > zQ) {
+            if (inside) {
+              game.createBlock(new THREE.Vector3(x + cubeSize / 2, y + cubeSize / 2, z + cubeSize / 2), material);
+            }
+          } else if (intersectZQs[0] === zQ) {
+            while (intersectZQs[0] === zQ) {
+              inside = !inside;
+              if (inside) {
+                game.createBlock(new THREE.Vector3(x + cubeSize / 2, y + cubeSize / 2, z + cubeSize / 2), material);
+              }
+              intersectZs.shift();
+              intersectZQs.shift();
+            }
+          } else {
+            console.log("Should not happen");
+          }
+        }
+      }
+      if (jobs.length > 0) {
+        return setTimeout(consumeJob, 1000.0 / 60.0);
+      } else {
+        return game.scene.remove(mesh);
+      }
+    };
+    return consumeJob();
+  };
+
+}).call(this);
+
+        return (require['voxel-geometry'] = module.exports);
+    };
+};
+require['voxel-geometry'].nonce = nonce;
+
+require['voxel-geometry/stl_parser'] = function() {
+    return new function() {
+        var exports = require['voxel-geometry/stl_parser'] = this;
+        var module = {exports:exports};
+        var process = require("__browserify_process");
+        var __filename = "/Users/jae/workspace/src/voxel-geometry/stl_parser.js";
+        // Generated by CoffeeScript 1.3.3
+
+/*
+@author aleeper / http://adamleeper.com/
+@author mrdoob / http://mrdoob.com/
+@author jaekwon / http://kopimism.org/
+
+Description: A THREE loader for STL files, as created by Solidworks and other CAD programs.
+Limitations: The binary loader could be optimized for memory.
+*/
+
+
+(function() {
+  var THREE, Triangle, parseAscii, parseBinary;
+
+  THREE = require('three');
+
+  Triangle = function() {
+    var _attr;
+    this._sa = 0;
+    this._buffer = new ArrayBuffer(50);
+    this.__byte = new Uint8Array(this._buffer);
+    this.normal = new Float32Array(this._buffer, this._sa + 0, 3);
+    this.v1 = new Float32Array(this._buffer, this._sa + 12, 3);
+    this.v2 = new Float32Array(this._buffer, this._sa + 24, 3);
+    this.v3 = new Float32Array(this._buffer, this._sa + 36, 3);
+    _attr = new Int16Array(this._buffer, this._sa + 48, 1);
+    return Object.defineProperty(this, "attr", {
+      get: function() {
+        return _attr[0];
+      },
+      set: function(val) {
+        return _attr[0] = val;
+      },
+      enumerable: true
+    });
+  };
+
+  this.parse = function(arrayBuffer) {
+    var head, i, s, u8a, _i, _ref;
+    u8a = new Uint8Array(arrayBuffer);
+    head = String.fromCharCode.apply(null, new Uint8Array(arrayBuffer, 0, 5));
+    if (head === 'solid') {
+      s = '';
+      for (i = _i = 0, _ref = arrayBuffer.byteLength; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
+        s += String.fromCharCode(u8a[i]);
+      }
+      return parseAscii(s);
+    } else {
+      return parseBinary(u8a);
+    }
+  };
+
+  this.parseBinary = parseBinary = function(u8a) {
+    var face, geometry, i, j, len, normal, numTriangles, offset, _i, _j;
+    geometry = new THREE.Geometry();
+    numTriangles = u8a[80] << 0;
+    numTriangles += u8a[81] << 8;
+    numTriangles += u8a[82] << 16;
+    numTriangles += u8a[83] << 24;
+    face = new Triangle();
+    offset = 84;
+    for (i = _i = 0; 0 <= numTriangles ? _i < numTriangles : _i > numTriangles; i = 0 <= numTriangles ? ++_i : --_i) {
+      for (j = _j = 0; _j < 50; j = ++_j) {
+        face.__byte[j] = u8a[offset + j];
+      }
+      geometry.vertices.push(new THREE.Vector3(face.v1[0], face.v1[1], face.v1[2]));
+      geometry.vertices.push(new THREE.Vector3(face.v2[0], face.v2[1], face.v2[2]));
+      geometry.vertices.push(new THREE.Vector3(face.v3[0], face.v3[1], face.v3[2]));
+      normal = new THREE.Vector3(face.normal[0], face.normal[1], face.normal[2]);
+      len = geometry.vertices.length;
+      geometry.faces.push(new THREE.Face3(len - 3, len - 2, len - 1, normal));
+      offset += 50;
+    }
+    geometry.computeCentroids();
+    geometry.computeBoundingSphere();
+    return geometry;
+  };
+
+  this.parseAscii = parseAscii = function(text) {
+    var facetext, geometry, len, normal, patternFace, patternNormal, patternVertex, result;
+    geometry = new THREE.Geometry();
+    patternFace = /facet([\s\S]*?)endfacet/g;
+    result = void 0;
+    while ((result = patternFace.exec(text)) !== null) {
+      facetext = result[0];
+      patternNormal = /normal[\s]+([-+]?[0-9]+\.?[0-9]*([eE][-+]?[0-9]+)?)+[\s]+([-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?)+[\s]+([-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?)+/g;
+      while ((result = patternNormal.exec(facetext)) !== null) {
+        normal = new THREE.Vector3(Number(result[1]), Number(result[3]), Number(result[5]));
+      }
+      patternVertex = /vertex[\s]+([-+]?[0-9]+\.?[0-9]*([eE][-+]?[0-9]+)?)+[\s]+([-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?)+[\s]+([-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?)+/g;
+      while ((result = patternVertex.exec(facetext)) !== null) {
+        geometry.vertices.push(new THREE.Vector3(Number(result[1]), Number(result[3]), Number(result[5])));
+      }
+      len = geometry.vertices.length;
+      geometry.faces.push(new THREE.Face3(len - 3, len - 2, len - 1, normal));
+    }
+    geometry.computeCentroids();
+    geometry.computeBoundingSphere();
+    return geometry;
+  };
+
+}).call(this);
+
+        return (require['voxel-geometry/stl_parser'] = module.exports);
+    };
+};
+require['voxel-geometry/stl_parser'].nonce = nonce;
+
+require['binary-xhr'] = function() {
+    return new function() {
+        var exports = require['binary-xhr'] = this;
+        var module = {exports:exports};
+        var process = require("__browserify_process");
+        var __filename = "/Users/jae/workspace/src/sembly.net/node_modules/binary-xhr/index.js";
+        var inherits = require('inherits')
+
+module.exports = function(url, cb) {
+  return new BinaryXHR(url, cb)
+}
+
+function BinaryXHR(url, cb) {
+  var self = this
+  var xhr = new XMLHttpRequest()
+  this.xhr = xhr
+  xhr.responseType = 'arraybuffer'
+  xhr.open("GET", url, true)
+  xhr.onreadystatechange = function () {
+    if (self.xhr.readyState === 4) {
+      if (self.xhr.response && self.xhr.response.byteLength > 0) {
+        cb(false, self.xhr.response)
+      } else {
+        if (self.xhr.response && self.xhr.response.byteLength === 0) return cb('response length 0')
+        cb('no response')
+      }
+    }
+  }
+  xhr.send(null)
+}
+
+        return (require['binary-xhr'] = module.exports);
+    };
+};
+require['binary-xhr'].nonce = nonce;
+
+require['inherits'] = function() {
+    return new function() {
+        var exports = require['inherits'] = this;
+        var module = {exports:exports};
+        var process = require("__browserify_process");
+        var __filename = "static/javascripts/empty.js";
+        
+        return (require['inherits'] = module.exports);
+    };
+};
+require['inherits'].nonce = nonce;
 
 require['__browserify_process'] = function() {
     return new function() {

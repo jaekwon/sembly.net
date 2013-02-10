@@ -12,6 +12,7 @@ window._typeface_js =
 
 # Global variables
 camera = scene = renderer = undefined
+shaderMaterial = undefined
 controls = undefined
 
 init = ->
@@ -29,10 +30,53 @@ init = ->
   camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1, 10000 )
   camera.position.z = 1000
 
+  # Add custom shader
+  # http://www.html5rocks.com/en/tutorials/webgl/shaders/
+  vertexShader = """
+    // create a shared variable for the
+    // VS and FS containing the normal
+    varying vec3 vNormal;
+
+    void main() {
+
+        // set the vNormal value with
+        // the attribute value passed
+        // in by Three.js
+        vNormal = normal;
+
+        gl_Position = projectionMatrix *
+                      modelViewMatrix *
+                      vec4(position,1.0);
+    }
+  """
+  fragmentShader = """
+    // same name and type as VS
+    varying vec3 vNormal;
+
+    void main() {
+
+        // calc the dot product and clamp
+        // 0 -> 1 rather than -1 -> 1
+        vec3 light = vec3(0.5,0.2,1.0);
+          
+        // ensure it's normalized
+        light = normalize(light);
+      
+        // calculate the dot product of
+        // the light to the vertex normal
+        float dProd = max(0.0, dot(vNormal, light));
+      
+        // feed into our frag colour
+        gl_FragColor = vec4(dProd, dProd, dProd, 1.0);
+      
+    }
+  """
+  shaderMaterial = new THREE.ShaderMaterial({vertexShader, fragmentShader})
+
   # Add "Test" to scene
   geometry = new THREE.TextGeometry("test", {size:200, height:0, curveSegments:0, font:"helvetiker", weight:"bold", style:"normal"})
-  material = new THREE.MeshBasicMaterial( { color: 0x000000, wireframe: true } )
-  mesh = new THREE.Mesh( geometry, material )
+  # material = new THREE.MeshBasicMaterial( { color: 0x000000, wireframe: true } )
+  mesh = new THREE.Mesh( geometry, shaderMaterial )
   scene.add( mesh )
 
   # Add grid to scene
@@ -61,10 +105,13 @@ $ ->
 
   $(document.body).append(
     require('client/widgets').openLocalFileWidget(
+      {responseType: 'arraybuffer'},
       (err, data) ->
-        console.log(err, data)
-        # mesh = geom.parseSTL(e.target.result)
-        # scene.add( mesh )
+        console.log(err, data) if err?
+        geometry = require('voxel-geometry').parsers.stl.parse( data )
+        # material = new THREE.MeshBasicMaterial( { color: 0x000000, wireframe: true } )
+        mesh = new THREE.Mesh( geometry, shaderMaterial )
+        scene.add( mesh )
         render()
     ).el
   )

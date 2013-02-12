@@ -111,6 +111,7 @@ $ ->
         geometry = require('voxel-geometry').parsers.stl.parse( data )
         # material = new THREE.MeshBasicMaterial( { color: 0x000000, wireframe: true } )
         mesh = new THREE.Mesh( geometry, shaderMaterial )
+        window.mesh = mesh # last mesh, for debugging
         scene.add( mesh )
         render()
     ).el

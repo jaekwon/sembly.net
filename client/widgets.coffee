@@ -1,4 +1,5 @@
 {View} = require 'client/view'
+{makeDraggable} = require 'client/draggable'
 
 fileInputEl = (cb) ->
   # Creates an $(el) that calls the given callback 'cb' upon file load.
@@ -27,8 +28,8 @@ fileInputEl = (cb) ->
   responseType  = options?.responseType ? 'arraybuffer'
   singleUse     = options?.singleUse    ? no
 
-  wgt = new View(background:'rgba(129, 145, 142, 0.8)')
-  wgt.write('import: ')
+  wgt = new View(background:'rgba(129, 145, 142, 0.8)', top:200, left:200)
+  wgt.write('import locally\n')
   wgt.append fileInputEl (event) ->
     # After file load...
     if singleUse then $(event.target).attr('disabled', 'disabled')
@@ -43,5 +44,10 @@ fileInputEl = (cb) ->
       else
         throw new Error("Unexpected responseType: #{responseType}")
       fr.onload = (e) -> fileCb(null, e.target.result)
+  wgt.write('\n--- or ---\n')
+  wgt.write('import URL\n')
+  wgt.append $('<input/>')
+
+  makeDraggable wgt.el
 
   return wgt

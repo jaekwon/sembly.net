@@ -1,0 +1,48 @@
+
+@font-face {
+  font-family: 'Ubuntu Mono';
+  font-style: normal;
+  font-weight: 400;
+  src: local('Ubuntu Mono'), local('UbuntuMono-Regular'), url(/fonts/ubuntu_mono.woff) format('woff');
+}
+
+@font-face {
+  font-family: 'Inconsolata';
+  font-style: normal;
+  font-weight: 400;
+  src: local('Inconsolata'), url(/fonts/inconsolata.woff), format('woff');
+}
+
+body {
+  font-family: 'Inconsolata', 'Ubuntu Mono', sans-serif;
+}
+
+/* Nice way to add a border below. */
+article {
+  max-width: 800px;
+  margin: 0px auto;
+  clear: both;
+  border-bottom: 4px solid #DDDDDD;
+  overflow: auto;
+}
+article:last-of-type {
+  border-bottom: none;
+}
+
+.view_el {
+  position: absolute;
+  /* http://stackoverflow.com/questions/779434/preventing-padding-propety-from-changing-width-or-height-in-css */
+  -webkit-box-sizing: border-box; /* Safari/Chrome, other WebKit */
+  -moz-box-sizing: border-box;    /* Firefox, other Gecko */
+  box-sizing: border-box;         /* Opera/IE 8+ */
+  border-radius: 10px;
+
+  &> .view_content {
+    position: relative;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    //border: 1px solid blue;
+    //background-color: red;
+  }
+
+}

@@ -124,6 +124,89 @@
 };
 require['client/control'].nonce = nonce;
 
+require['client/draggable'] = function() {
+    return new function() {
+        var exports = require['client/draggable'] = this;
+        var module = {exports:exports};
+        var process = require("__browserify_process");
+        var __filename = "/Users/jae/workspace/src/sembly.net/client/draggable.coffee";
+        (function() {
+  var Drag, Drop, Move, dragging, dx, dy, getPos;
+
+  dragging = dx = dy = void 0;
+
+  getPos = function(e) {
+    var x, y;
+    if (e.pageX) {
+      x = e.pageX;
+      y = e.pageY;
+      return {
+        x: x,
+        y: y
+      };
+    } else if (e.clientX) {
+      x = clientX;
+      y = clientY;
+      return {
+        x: x,
+        y: y
+      };
+    }
+  };
+
+  Drag = function(e) {
+    var offset, src, x, y, _ref;
+    if (!e) {
+      e = window.event;
+    }
+    _ref = getPos(e), x = _ref.x, y = _ref.y;
+    src = (e.target ? e.target : e.srcElement);
+    dragging = $(src).closest('.draggable');
+    dragging.addClass('dragging');
+    offset = dragging.offset();
+    dx = x - offset.left;
+    return dy = y - offset.top;
+  };
+
+  Move = function(e) {
+    var x, y, _ref;
+    if (!dragging) {
+      return;
+    }
+    if (!e) {
+      e = window.event;
+    }
+    _ref = getPos(e), x = _ref.x, y = _ref.y;
+    return dragging.css({
+      left: x - dx,
+      top: y - dy
+    });
+  };
+
+  Drop = function(e) {
+    if (!dragging) {
+      return;
+    }
+    dragging.removeClass('dragging');
+    return dragging = void 0;
+  };
+
+  $(document).mousemove(Move);
+
+  $(document).mouseup(Drop);
+
+  this.makeDraggable = function(el) {
+    el.addClass('draggable');
+    return el.mousedown(Drag);
+  };
+
+}).call(this);
+
+        return (require['client/draggable'] = module.exports);
+    };
+};
+require['client/draggable'].nonce = nonce;
+
 require['client/helpers'] = function() {
     return new function() {
         var exports = require['client/helpers'] = this;
@@ -446,6 +529,7 @@ require['client'] = function() {
       }
       geometry = require('voxel-geometry').parsers.stl.parse(data);
       mesh = new THREE.Mesh(geometry, shaderMaterial);
+      window.mesh = mesh;
       scene.add(mesh);
       return render();
     }).el);
@@ -481,71 +565,82 @@ require['client/view'] = function() {
   this.View = View = (function() {
 
     function View(_arg) {
-      var _ref, _ref1, _ref2, _ref3, _ref4, _ref5, _ref6, _ref7, _ref8;
-      _ref = _arg != null ? _arg : {}, this.el = _ref.el, this.padding = _ref.padding, this.width = _ref.width, this.height = _ref.height, this.top = _ref.top, this.left = _ref.left, this.border = _ref.border, this.background = _ref.background;
+      var _ref, _ref1, _ref2, _ref3, _ref4, _ref5, _ref6;
+      _ref = _arg != null ? _arg : {}, this.el = _ref.el, this.content = _ref.content, this.padding = _ref.padding, this.width = _ref.width, this.height = _ref.height, this.top = _ref.top, this.left = _ref.left, this.border = _ref.border, this.background = _ref.background;
       if ((_ref1 = this.padding) == null) {
         this.padding = 10;
       }
       if ((_ref2 = this.width) == null) {
         this.width = 320;
       }
-      if ((_ref3 = this.height) == null) {
-        this.height = 200;
-      }
-      if ((_ref4 = this.top) == null) {
+      if ((_ref3 = this.top) == null) {
         this.top = 10;
       }
-      if ((_ref5 = this.left) == null) {
+      if ((_ref4 = this.left) == null) {
         this.left = 10;
       }
-      if ((_ref6 = this.border) == null) {
+      if ((_ref5 = this.border) == null) {
         this.border = 'none';
       }
-      if ((_ref7 = this.background) == null) {
+      if ((_ref6 = this.background) == null) {
         this.background = randomColor({
           alpha: 0.8
         });
       }
-      if ((_ref8 = this.el) == null) {
+      if (!(this.el != null)) {
         this.el = $('<div/>');
+        this.el.css({
+          position: 'absolute',
+          display: 'block'
+        });
+        this.el.css({
+          wordWrap: 'break-word',
+          whiteSpace: 'pre-wrap'
+        });
+        this.el.css({
+          borderRadius: 10
+        });
       }
-      this.el.addClass('borderBox');
-      this.el.css({
-        position: 'absolute',
-        display: 'block'
-      });
-      this.el.css({
-        wordWrap: 'break-word',
-        whiteSpace: 'pre-wrap'
-      });
+      this.el.addClass('view_el');
+      if (!(this.content != null)) {
+        this.content = $('<div/>');
+      }
+      this.content.addClass('view_content');
+      this.el.append(this.content);
       this.repaint();
     }
 
     View.prototype.repaint = function() {
       var height, width;
       width = this.width - this.padding * 2;
-      height = this.height - this.padding * 2;
+      if (this.height != null) {
+        height = this.height - this.padding * 2;
+      }
       this.el.css({
         padding: this.padding
       });
       this.el.css({
         width: this.width,
-        height: this.height,
         top: this.top,
         left: this.left,
         border: this.border,
         background: this.background
       });
+      if (this.height != null) {
+        this.el.css({
+          height: this.height
+        });
+      }
       return this;
     };
 
     View.prototype.write = function(text) {
-      this.el.append($('<span/>').text(text));
+      this.content.append($('<span/>').text(text));
       return this;
     };
 
     View.prototype.append = function(el) {
-      this.el.append(el);
+      this.content.append(el);
       return this;
     };
 
@@ -581,9 +676,11 @@ require['client/widgets'] = function() {
         var process = require("__browserify_process");
         var __filename = "/Users/jae/workspace/src/sembly.net/client/widgets.coffee";
         (function() {
-  var View, fileInputEl;
+  var View, fileInputEl, makeDraggable;
 
   View = require('client/view').View;
+
+  makeDraggable = require('client/draggable').makeDraggable;
 
   fileInputEl = function(cb) {
     var inputEl;
@@ -605,9 +702,11 @@ require['client/widgets'] = function() {
     responseType = (_ref1 = options != null ? options.responseType : void 0) != null ? _ref1 : 'arraybuffer';
     singleUse = (_ref2 = options != null ? options.singleUse : void 0) != null ? _ref2 : false;
     wgt = new View({
-      background: 'rgba(129, 145, 142, 0.8)'
+      background: 'rgba(129, 145, 142, 0.8)',
+      top: 200,
+      left: 200
     });
-    wgt.write('import: ');
+    wgt.write('import locally\n');
     wgt.append(fileInputEl(function(event) {
       var file, files, _i, _len, _results;
       if (singleUse) {
@@ -634,6 +733,10 @@ require['client/widgets'] = function() {
       }
       return _results;
     }));
+    wgt.write('\n--- or ---\n');
+    wgt.write('import URL\n');
+    wgt.append($('<input/>'));
+    makeDraggable(wgt.el);
     return wgt;
   };
 
@@ -37874,6 +37977,8 @@ Limitations: The binary loader could be optimized for memory.
     }
     geometry.computeCentroids();
     geometry.computeBoundingSphere();
+    geometry.computeFaceNormals();
+    geometry.computeVertexNormals();
     return geometry;
   };
 
@@ -37897,6 +38002,8 @@ Limitations: The binary loader could be optimized for memory.
     }
     geometry.computeCentroids();
     geometry.computeBoundingSphere();
+    geometry.computeFaceNormals();
+    geometry.computeVertexNormals();
     return geometry;
   };
 

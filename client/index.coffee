@@ -98,8 +98,8 @@ animate = ->
 
 render = -> renderer.render( scene, camera )
 
+# On document ready...
 $ ->
-  # $(document).ready...
   init()
   animate()
 
@@ -114,13 +114,14 @@ $ ->
       scene.add( mesh )
       render()
   )
-  $(document.body).append fileLoaderView.el
 
   editorView = require('client/widgets').editorView(
     (err, text) ->
       console.log(err, text) if err?
       console.log "yay"
   )
+
+  $(document.body).append fileLoaderView.el
   $(document.body).append editorView.el
 
 module.exports = ->

@@ -21,10 +21,12 @@ Drag = (e) ->
   offset = dragging.offset()
   dx = x - offset.left
   dy = y - offset.top
+  return no
 
 DragBlock = (e) ->
   e = window.event unless e
-  return no
+  e.stopPropagation()
+  # return no
 
 Move = (e) ->
   return unless dragging

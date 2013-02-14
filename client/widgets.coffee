@@ -50,7 +50,7 @@ fileInputEl = (cb) ->
   view.append $('<input/>')
 
   makeDraggable view.el
-  # blockDrag view.content
+  blockDrag view.content
 
   return view
 
@@ -92,6 +92,6 @@ fileInputEl = (cb) ->
   setTimeout (->mirror.setValue('')), 0
 
   makeDraggable view.el
-  # blockDrag view.content
+  blockDrag view.content
 
   return view

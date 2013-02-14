@@ -165,14 +165,15 @@ require['client/draggable'] = function() {
     dragging.addClass('dragging');
     offset = dragging.offset();
     dx = x - offset.left;
-    return dy = y - offset.top;
+    dy = y - offset.top;
+    return false;
   };
 
   DragBlock = function(e) {
     if (!e) {
       e = window.event;
     }
-    return false;
+    return e.stopPropagation();
   };
 
   Move = function(e) {
@@ -218,122 +219,6 @@ require['client/draggable'] = function() {
     };
 };
 require['client/draggable'].nonce = nonce;
-
-require['client/editor'] = function() {
-    return new function() {
-        var exports = require['client/editor'] = this;
-        var module = {exports:exports};
-        var process = require("__browserify_process");
-        var __filename = "/Users/jae/workspace/src/sembly.net/client/editor.coffee";
-        (function() {
-  var Editor, assert, clazz, tabCache, tabSize, x;
-
-  clazz = require('cardamom').clazz;
-
-  assert = require('assert');
-
-  tabSize = 2;
-
-  tabCache = (function() {
-    var _i, _results;
-    _results = [];
-    for (x = _i = 0; 0 <= tabSize ? _i <= tabSize : _i >= tabSize; x = 0 <= tabSize ? ++_i : --_i) {
-      _results.push(Array(x + 1).join(' '));
-    }
-    return _results;
-  })();
-
-  Editor = this.Editor = clazz('Editor', function() {
-    return {
-      init: function(_arg) {
-        var _ref, _ref1;
-        this.el = _arg.el, this.mirror = _arg.mirror, this.onSubmit = _arg.onSubmit, this.mode = _arg.mode;
-        assert.ok((this.el != null) || (this.mirror != null), "Editor wants an @el or a premade @mirror");
-        if ((_ref = this.mode) == null) {
-          this.mode = 'coffeescript';
-        }
-        this.el.append(this.elInner = $('<div class="editor_inner"/>'));
-        return (_ref1 = this.mirror) != null ? _ref1 : this.mirror = this.makeMirror(this.elInner);
-      },
-      makeMirror: function(target) {
-        var mirror,
-          _this = this;
-        assert.ok(target.length === 1, "Editor target el not unique");
-        mirror = window._lastMirror = CodeMirror(target[0], {
-          value: '',
-          mode: this.mode,
-          theme: 'sembly',
-          keyMap: 'sembly',
-          autofocus: true,
-          gutter: true,
-          fixedGutter: true,
-          lineNumbers: true,
-          tabSize: tabSize,
-          onChange: (function() {
-            return target.height($(mirror.getWrapperElement()).height());
-          })
-        });
-        mirror.sanitize = function() {
-          var cursor, orig, tabReplaced;
-          cursor = mirror.getCursor();
-          tabReplaced = _this.replaceTabs(orig = mirror.getValue());
-          mirror.setValue(tabReplaced);
-          mirror.setCursor(cursor);
-          return tabReplaced;
-        };
-        mirror.submit = this.submit;
-        setTimeout((function() {
-          return mirror.setValue('');
-        }), 0);
-        return mirror;
-      },
-      replaceTabs: function(str) {
-        var accum, col, i1, i2, insertWs, line, lines, part, parts, _i, _j, _len, _len1;
-        accum = [];
-        lines = str.split('\n');
-        for (i1 = _i = 0, _len = lines.length; _i < _len; i1 = ++_i) {
-          line = lines[i1];
-          parts = line.split('\t');
-          col = 0;
-          for (i2 = _j = 0, _len1 = parts.length; _j < _len1; i2 = ++_j) {
-            part = parts[i2];
-            col += part.length;
-            accum.push(part);
-            if (i2 < parts.length - 1) {
-              insertWs = tabSize - col % tabSize;
-              col += insertWs;
-              accum.push(tabCache[insertWs]);
-            }
-          }
-          if (i1 < lines.length - 1) {
-            accum.push('\n');
-          }
-        }
-        return accum.join('');
-      },
-      getValue: function() {
-        return this.mirror.sanitize();
-      },
-      submit$: function() {
-        var value;
-        value = this.getValue();
-        if (value.trim().length === 0) {
-          return;
-        }
-        return typeof this.onSubmit === "function" ? this.onSubmit(value) : void 0;
-      },
-      focus: function() {
-        return this.mirror.focus();
-      }
-    };
-  });
-
-}).call(this);
-
-        return (require['client/editor'] = module.exports);
-    };
-};
-require['client/editor'].nonce = nonce;
 
 require['client/helpers'] = function() {
     return new function() {
@@ -662,13 +547,13 @@ require['client'] = function() {
       scene.add(mesh);
       return render();
     });
-    $(document.body).append(fileLoaderView.el);
     editorView = require('client/widgets').editorView(function(err, text) {
       if (err != null) {
         console.log(err, text);
       }
       return console.log("yay");
     });
+    $(document.body).append(fileLoaderView.el);
     return $(document.body).append(editorView.el);
   });
 
@@ -690,24 +575,6 @@ require['client/misc'] = function() {
         var process = require("__browserify_process");
         var __filename = "/Users/jae/workspace/src/sembly.net/client/misc.coffee";
         (function() {
-  var debug, fatal, hE, info, randid, warn, _ref, _ref1;
-
-  _ref = require('sembly/lib/helpers'), hE = _ref.htmlEscape, randid = _ref.randid;
-
-  _ref1 = require('nogg').logger(__filename.split('/').last()), debug = _ref1.debug, info = _ref1.info, warn = _ref1.warn, fatal = _ref1.fatal;
-
-  jQuery["catch"] = function(fn) {
-    var wrapped;
-    return wrapped = function() {
-      var _ref2, _ref3;
-      try {
-        return fn.apply(this, arguments);
-      } catch (err) {
-        fatal("Uncaught error: " + ((_ref2 = err.stack) != null ? _ref2 : err));
-        return console.log("Uncaught error: " + ((_ref3 = err.stack) != null ? _ref3 : err));
-      }
-    };
-  };
 
   jQuery.fn.extend({
     sortElements: (function() {
@@ -930,6 +797,7 @@ require['client/widgets'] = function() {
     view.write('import URL\n');
     view.append($('<input/>'));
     makeDraggable(view.el);
+    blockDrag(view.content);
     return view;
   };
 
@@ -962,6 +830,7 @@ require['client/widgets'] = function() {
       return mirror.setValue('');
     }), 0);
     makeDraggable(view.el);
+    blockDrag(view.content);
     return view;
   };
 
@@ -37963,7 +37832,7 @@ require['voxel-geometry'] = function() {
         var exports = require['voxel-geometry'] = this;
         var module = {exports:exports};
         var process = require("__browserify_process");
-        var __filename = "/Users/jae/workspace/src/voxel-geometry/index.js";
+        var __filename = "/Users/jae/workspace/src/sembly.net/node_modules/voxel-geometry/index.js";
         // Generated by CoffeeScript 1.3.3
 (function() {
   var binaryXHR, stlParser;
@@ -38125,7 +37994,7 @@ require['voxel-geometry/stl_parser'] = function() {
         var exports = require['voxel-geometry/stl_parser'] = this;
         var module = {exports:exports};
         var process = require("__browserify_process");
-        var __filename = "/Users/jae/workspace/src/voxel-geometry/stl_parser.js";
+        var __filename = "/Users/jae/workspace/src/sembly.net/node_modules/voxel-geometry/stl_parser.js";
         // Generated by CoffeeScript 1.3.3
 
 /*

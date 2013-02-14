@@ -33,8 +33,14 @@ article:last-of-type {
   /* Firefox, other Gecko */
   box-sizing: border-box;
   /* Opera/IE 8+ */
-  border-radius: 10px; }
+  border-radius: 5px; }
   .view_el > .view_content {
     position: relative;
     white-space: pre-wrap;
     word-wrap: break-word; }
+
+.draggable {
+  cursor: pointer; }
+  .draggable > .dragBlock {
+    cursor: default;
+    background-color: rgba(255, 255, 255, 0.1); }

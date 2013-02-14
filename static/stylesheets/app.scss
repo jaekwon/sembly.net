@@ -35,7 +35,7 @@ article:last-of-type {
   -webkit-box-sizing: border-box; /* Safari/Chrome, other WebKit */
   -moz-box-sizing: border-box;    /* Firefox, other Gecko */
   box-sizing: border-box;         /* Opera/IE 8+ */
-  border-radius: 10px;
+  border-radius: 5px;
 
   &> .view_content {
     position: relative;
@@ -45,4 +45,12 @@ article:last-of-type {
     //background-color: red;
   }
 
+}
+
+.draggable {
+  cursor: pointer;
+  &> .dragBlock {
+    cursor: default;
+    background-color: rgba(255,255,255,0.1);
+  }
 }

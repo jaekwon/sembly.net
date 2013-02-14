@@ -103,19 +103,25 @@ $ ->
   init()
   animate()
 
-  $(document.body).append(
-    require('client/widgets').openLocalFileWidget(
-      {responseType: 'arraybuffer'},
-      (err, data) ->
-        console.log(err, data) if err?
-        geometry = require('voxel-geometry').parsers.stl.parse( data )
-        # material = new THREE.MeshBasicMaterial( { color: 0x000000, wireframe: true } )
-        mesh = new THREE.Mesh( geometry, shaderMaterial )
-        window.mesh = mesh # last mesh, for debugging
-        scene.add( mesh )
-        render()
-    ).el
+  fileLoaderView = require('client/widgets').fileLoaderView(
+    {responseType: 'arraybuffer'},
+    (err, data) ->
+      console.log(err, data) if err?
+      geometry = require('voxel-geometry').parsers.stl.parse( data )
+      # material = new THREE.MeshBasicMaterial( { color: 0x000000, wireframe: true } )
+      mesh = new THREE.Mesh( geometry, shaderMaterial )
+      window.mesh = mesh # last mesh, for debugging
+      scene.add( mesh )
+      render()
   )
+  $(document.body).append fileLoaderView.el
+
+  editorView = require('client/widgets').editorView(
+    (err, text) ->
+      console.log(err, text) if err?
+      console.log "yay"
+  )
+  $(document.body).append editorView.el
 
 module.exports = ->
   # This gets called upon page load.

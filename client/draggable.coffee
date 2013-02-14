@@ -22,6 +22,10 @@ Drag = (e) ->
   dx = x - offset.left
   dy = y - offset.top
 
+DragBlock = (e) ->
+  e = window.event unless e
+  return no
+
 Move = (e) ->
   return unless dragging
   e = window.event  unless e
@@ -40,3 +44,7 @@ $(document).mouseup Drop
 @makeDraggable = (el) ->
   el.addClass 'draggable'
   el.mousedown Drag
+
+@blockDrag = (el) ->
+  el.addClass 'dragBlock'
+  el.mousedown DragBlock

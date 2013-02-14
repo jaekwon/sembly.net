@@ -1,5 +1,5 @@
 {View} = require 'client/view'
-{makeDraggable} = require 'client/draggable'
+{blockDrag, makeDraggable} = require 'client/draggable'
 
 fileInputEl = (cb) ->
   # Creates an $(el) that calls the given callback 'cb' upon file load.
@@ -14,7 +14,7 @@ fileInputEl = (cb) ->
     alert('The File APIs are not fully supported in this browser.')
     undefined
 
-@openLocalFileWidget = (options, fileCb) ->
+@fileLoaderView = (options, fileCb) ->
   # This widget lets the user open a local shape file.
   # - options:
   #   * responseType: Read the file as 'arraybuffer' (default) or 'binarystring'.
@@ -22,19 +22,20 @@ fileInputEl = (cb) ->
   # - fileCb: Called for each loaded file
 
   # Shift arguments
-  [options, fileCb] = [null, options] unless fileCb?
+  [options, fileCb] = [null, options] if options instanceof Function
 
   # Defaults
   responseType  = options?.responseType ? 'arraybuffer'
   singleUse     = options?.singleUse    ? no
 
-  wgt = new View(background:'rgba(129, 145, 142, 0.8)', top:200, left:200)
-  wgt.write('import locally\n')
-  wgt.append fileInputEl (event) ->
+  # Construct Widget View
+  view = new View(background:'rgba(129, 145, 142, 0.8)', top:200, left:200)
+  view.write('import local file\n')
+  view.append fileInputEl (event) ->
     # After file load...
     if singleUse then $(event.target).attr('disabled', 'disabled')
     files = event.target.files
-    for file in files then do (file) ->
+    for file in files # then do (file) ->
       # 'file' is a selected file
       fr = new FileReader()
       if responseType is 'arraybuffer'
@@ -43,11 +44,54 @@ fileInputEl = (cb) ->
         fr.readAsBinaryString(file)
       else
         throw new Error("Unexpected responseType: #{responseType}")
-      fr.onload = (e) -> fileCb(null, e.target.result)
-  wgt.write('\n--- or ---\n')
-  wgt.write('import URL\n')
-  wgt.append $('<input/>')
+      fr.onload = (e) -> console.log(file)
+  view.write('\n\n  or, \n\n')
+  view.write('import URL\n')
+  view.append $('<input/>')
 
-  makeDraggable wgt.el
+  makeDraggable view.el
+  # blockDrag view.content
 
-  return wgt
+  return view
+
+@editorView = (options, saveCb, cancelCb) ->
+  # This widget lets the user edit a file.
+  # - options:
+  #   * mode: CodeMirror mode, e.g. 'coffeescript'
+  # - saveCb:
+  # - cancelCb:
+
+  # Shift arguments
+  [options, saveCb, cancelCb] = [null, options, saveCb] if options instanceof Function
+
+  # Defaults
+  mode        = options?.mode     ? 'coffeescript'
+  tabSize     = options?.tabSize  ? 2
+
+  # Construct Widget View
+  view = new View(background:'rgba(129, 145, 142, 0.8)', top:400, left:200)
+  view.content.addClass 'editor_inner'
+
+  # Construct CodeMirror
+  mirror = view.mirror = window.mirror = CodeMirror view.content[0],
+    value:        '' # see mirror.setValue below.
+    mode:         mode
+    # theme:        'sembly'
+    # keyMap:       'sembly'
+    autofocus:    yes
+    gutter:       yes
+    fixedGutter:  yes
+    lineNumbers:  yes
+    tabSize:      tabSize
+    onChange: (->
+      view.content.height($(mirror.getWrapperElement()).height())
+    )#.throttle(100) maybe causing issues.
+  # Gutter
+  # mirror.setMarker 0, '● ', 'cm-bracket'
+  # Fix to set height of editor
+  setTimeout (->mirror.setValue('')), 0
+
+  makeDraggable view.el
+  # blockDrag view.content
+
+  return view

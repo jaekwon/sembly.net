@@ -6,7 +6,9 @@
       @title "sembly.net"
       @meta name: 'description', content: 'Copying could be a Right, if you want it.'
       @link rel: 'stylesheet', href: '/stylesheets/app.css'
+      @link rel: 'stylesheet', href: '/stylesheets/codemirror.css'
       @script src: '/javascripts/jquery.js'
+      @script src: '/javascripts/codemirror.js'
       @script src: '/javascripts/client.js'
       @script src: '/fonts/helvetiker.typeface.js'
 

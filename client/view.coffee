@@ -14,15 +14,10 @@
     @border     ?= 'none'
     @background ?= randomColor(alpha:0.8)
 
-    if not @el?
-      @el = $('<div/>')
-      @el.css({position:'absolute', display:'block'})
-      @el.css({wordWrap:'break-word', whiteSpace:'pre-wrap'}) # word-wrapping with pre
-      @el.css({borderRadius:10})
+    @el = $('<div/>') unless @el?
     @el.addClass('view_el')
 
-    if not @content?
-      @content = $('<div/>')
+    @content = $('<div/>') unless @content?
     @content.addClass('view_content')
 
     @el.append @content

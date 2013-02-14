@@ -44,7 +44,7 @@ fileInputEl = (cb) ->
         fr.readAsBinaryString(file)
       else
         throw new Error("Unexpected responseType: #{responseType}")
-      fr.onload = (e) -> console.log(file)
+      fr.onload = (e) -> fileCb(null, e.target.result)
   view.write('\n\n  or, \n\n')
   view.write('import URL\n')
   view.append $('<input/>')
@@ -69,7 +69,7 @@ fileInputEl = (cb) ->
   tabSize     = options?.tabSize  ? 2
 
   # Construct Widget View
-  view = new View(background:'rgba(129, 145, 142, 0.8)', top:400, left:200)
+  view = new View(background:'rgba(129, 145, 142, 0.8)', top:400, left:200, width:480)
   view.content.addClass 'editor_inner'
 
   # Construct CodeMirror

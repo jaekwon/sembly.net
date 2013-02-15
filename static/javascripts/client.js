@@ -459,11 +459,13 @@ require['client'] = function() {
         var process = require("__browserify_process");
         var __filename = "/Users/jae/workspace/src/sembly.net/client/index.coffee";
         (function() {
-  var THREE, View, animate, camera, controls, hasWebGL, init, render, renderer, scene, shaderMaterial, _ref;
+  var THREE, View, animate, camera, controls, hasWebGL, headLamp, init, materials, render, renderer, scene, _ref;
 
   View = require('client/view').View;
 
   hasWebGL = require('client/helpers').hasWebGL;
+
+  materials = require('client/three_materials');
 
   THREE = ((_ref = window.THREE) != null ? _ref : window.THREE = require('three'));
 
@@ -476,12 +478,12 @@ require['client'] = function() {
 
   camera = scene = renderer = void 0;
 
-  shaderMaterial = void 0;
-
   controls = void 0;
 
+  headLamp = void 0;
+
   init = function() {
-    var geometry, grid, hemiLight, mesh;
+    var directional, geometry, grid, mesh;
     if (hasWebGL()) {
       renderer = new THREE.WebGLRenderer();
     } else {
@@ -492,21 +494,8 @@ require['client'] = function() {
     scene = new THREE.Scene();
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 10000);
     camera.position.z = 1000;
-    hemiLight = new THREE.HemisphereLight(0xffffff, 0xffffff, 0.9);
-    hemiLight.color.setHSV(0.6, 0.75, 1);
-    hemiLight.groundColor.setHSV(0.095, 0.5, 1);
-    hemiLight.position.set(0, 500, 0);
-    scene.add(hemiLight);
-    shaderMaterial = new THREE.MeshPhongMaterial({
-      color: 0xffffff,
-      specular: 0xffffff,
-      ambient: 0xffffff,
-      shininess: 20,
-      morphTargets: false,
-      morphNormals: false,
-      vertexColors: THREE.FaceColors,
-      shading: THREE.FlatShading
-    });
+    directional = materials.addLights(scene).directional;
+    headLamp = directional;
     geometry = new THREE.TextGeometry("test", {
       size: 200,
       height: 0,
@@ -515,9 +504,7 @@ require['client'] = function() {
       weight: "bold",
       style: "normal"
     });
-    mesh = new THREE.Mesh(geometry, shaderMaterial);
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
+    mesh = new THREE.Mesh(geometry, materials.volumetric);
     scene.add(mesh);
     grid = new THREE.Mesh(new THREE.PlaneGeometry(1000, 1000, 20, 20), new THREE.MeshBasicMaterial({
       color: 0xBBBBEE,
@@ -534,7 +521,8 @@ require['client'] = function() {
 
   animate = function() {
     requestAnimationFrame(animate);
-    return controls.update();
+    controls.update();
+    return headLamp.position = camera.position;
   };
 
   render = function() {
@@ -553,7 +541,7 @@ require['client'] = function() {
         console.log(err, data);
       }
       geometry = require('voxel-geometry').parsers.stl.parse(data);
-      mesh = new THREE.Mesh(geometry, shaderMaterial);
+      mesh = new THREE.Mesh(geometry, materials.volumetric);
       window.mesh = mesh;
       scene.add(mesh);
       return render();
@@ -630,6 +618,63 @@ require['client/misc'] = function() {
     };
 };
 require['client/misc'].nonce = nonce;
+
+require['client/three_materials'] = function() {
+    return new function() {
+        var exports = require['client/three_materials'] = this;
+        var module = {exports:exports};
+        var process = require("__browserify_process");
+        var __filename = "/Users/jae/workspace/src/sembly.net/client/three_materials.coffee";
+        (function() {
+  var THREE, _ref;
+
+  THREE = ((_ref = window.THREE) != null ? _ref : window.THREE = require('three'));
+
+  this.volumetric = new THREE.MeshPhongMaterial({
+    color: 0xaaaaaa,
+    specular: 0x222222,
+    ambient: 0x000000,
+    shininess: 150,
+    morphTargets: false,
+    morphNormals: false,
+    vertexColors: THREE.FaceColors,
+    shading: THREE.FlatShading
+  });
+
+  this.volumetricHighlighted = new THREE.MeshPhongMaterial({
+    color: 0xff8888,
+    specular: 0x222222,
+    ambient: 0x000000,
+    shininess: 150,
+    morphTargets: false,
+    morphNormals: false,
+    vertexColors: THREE.FaceColors,
+    shading: THREE.FlatShading
+  });
+
+  this.addLights = function(scene) {
+    var directLight, hemiLight;
+    hemiLight = new THREE.HemisphereLight(0xffffff, 0xffffff, 0.9);
+    hemiLight.color.setHSV(0.6, 0.75, 1);
+    hemiLight.groundColor.setHSV(0.095, 0.5, 1);
+    hemiLight.position.set(0, 9999999, 0);
+    scene.add(hemiLight);
+    directLight = new THREE.DirectionalLight(0xffffff, 1);
+    directLight.position.set(0, 0, 9999999);
+    directLight.color.setHSV(0.0, 0.0, 0.7);
+    scene.add(directLight);
+    return {
+      hemisphere: hemiLight,
+      directional: directLight
+    };
+  };
+
+}).call(this);
+
+        return (require['client/three_materials'] = module.exports);
+    };
+};
+require['client/three_materials'].nonce = nonce;
 
 require['client/view'] = function() {
     return new function() {
@@ -776,7 +821,7 @@ require['client/widgets'] = function() {
     responseType = (_ref2 = options != null ? options.responseType : void 0) != null ? _ref2 : 'arraybuffer';
     singleUse = (_ref3 = options != null ? options.singleUse : void 0) != null ? _ref3 : false;
     view = new View({
-      background: 'rgba(129, 145, 142, 0.8)',
+      background: 'rgba(200,200,200,0.8)',
       top: 200,
       left: 200
     });
@@ -820,7 +865,7 @@ require['client/widgets'] = function() {
     mode = (_ref2 = options != null ? options.mode : void 0) != null ? _ref2 : 'coffeescript';
     tabSize = (_ref3 = options != null ? options.tabSize : void 0) != null ? _ref3 : 2;
     view = new View({
-      background: 'rgba(129, 145, 142, 0.8)',
+      background: 'rgba(200,200,200,0.8)',
       top: 400,
       left: 200,
       width: 480

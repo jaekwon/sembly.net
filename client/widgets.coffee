@@ -29,7 +29,7 @@ fileInputEl = (cb) ->
   singleUse     = options?.singleUse    ? no
 
   # Construct Widget View
-  view = new View(background:'rgba(129, 145, 142, 0.8)', top:200, left:200)
+  view = new View(background:'rgba(200,200,200,0.8)', top:200, left:200)
   view.write('import local file\n')
   view.append fileInputEl (event) ->
     # After file load...
@@ -69,7 +69,7 @@ fileInputEl = (cb) ->
   tabSize     = options?.tabSize  ? 2
 
   # Construct Widget View
-  view = new View(background:'rgba(129, 145, 142, 0.8)', top:400, left:200, width:480)
+  view = new View(background:'rgba(200,200,200,0.8)', top:400, left:200, width:480)
   view.content.addClass 'editor_inner'
 
   # Construct CodeMirror

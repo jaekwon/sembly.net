@@ -1,5 +1,6 @@
 {View} = require 'client/view'
 {hasWebGL} = require 'client/helpers'
+materials = require 'client/three_materials'
 
 # Construct global THREE, as if three.js were included via HTML
 THREE = (window.THREE ?= require('three'))
@@ -12,8 +13,8 @@ window._typeface_js =
 
 # Global variables
 camera = scene = renderer = undefined
-shaderMaterial = undefined
 controls = undefined
+headLamp = undefined
 
 init = ->
 
@@ -30,21 +31,16 @@ init = ->
   camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1, 10000 )
   camera.position.z = 1000
 
-  # Add Light to scene
-  hemiLight = new THREE.HemisphereLight( 0xffffff, 0xffffff, 0.9 )
-  hemiLight.color.setHSV( 0.6, 0.75, 1 )
-  hemiLight.groundColor.setHSV( 0.095, 0.5, 1 )
-  hemiLight.position.set( 0, 500, 0 )
-  scene.add( hemiLight )
-
-  # Make default 'volumetric' shader
-  shaderMaterial = new THREE.MeshPhongMaterial( { color: 0xffffff, specular: 0xffffff, ambient: 0xffffff, shininess: 20, morphTargets: false, morphNormals: false, vertexColors: THREE.FaceColors, shading: THREE.FlatShading } )
+  # Add lights to the scene,
+  # and make the directional light a lamp in the position of the camera
+  {directional} = materials.addLights( scene )
+  headLamp = directional
 
   # Add "Test" to scene
   geometry = new THREE.TextGeometry("test", {size:200, height:0, curveSegments:0, font:"helvetiker", weight:"bold", style:"normal"})
-  mesh = new THREE.Mesh( geometry, shaderMaterial )
-  mesh.castShadow = true
-  mesh.receiveShadow = true
+  mesh = new THREE.Mesh( geometry, materials.volumetric )
+  # mesh.castShadow = true
+  # mesh.receiveShadow = true
   scene.add( mesh )
 
   # Add grid to scene
@@ -63,6 +59,7 @@ animate = ->
   # note: three.js includes requestAnimationFrame shim
   requestAnimationFrame( animate )
   controls.update()
+  headLamp.position = camera.position
 
 render = -> renderer.render( scene, camera )
 
@@ -77,7 +74,7 @@ $ ->
       console.log(err, data) if err?
       geometry = require('voxel-geometry').parsers.stl.parse( data )
       # material = new THREE.MeshBasicMaterial( { color: 0x000000, wireframe: true } )
-      mesh = new THREE.Mesh( geometry, shaderMaterial )
+      mesh = new THREE.Mesh( geometry, materials.volumetric )
       window.mesh = mesh # last mesh, for debugging
       scene.add( mesh )
       render()

@@ -15,7 +15,7 @@
       "marked":       ">= 0.2.7",
       "three":        "0.55.0",
       "demodule":     "0.0.2",
-      "voxel-geometry": "0.0.2",
+      "voxel-geometry": "0.0.3",
       "binary-xhr":   ""
     },
   "keywords": [],

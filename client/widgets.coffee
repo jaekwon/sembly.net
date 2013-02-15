@@ -44,7 +44,8 @@ fileInputEl = (cb) ->
         fr.readAsBinaryString(file)
       else
         throw new Error("Unexpected responseType: #{responseType}")
-      fr.onload = (e) -> fileCb(null, e.target.result)
+      fr.onload = (e) ->
+        fileCb(null, e.target.result)
   view.write('\n\n  or, \n\n')
   view.write('import URL\n')
   view.append $('<input/>')

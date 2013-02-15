@@ -1,6 +1,7 @@
 {View} = require 'client/view'
 {hasWebGL} = require 'client/helpers'
 materials = require 'client/three_materials'
+{createWorker} = require 'client/misc'
 
 # Construct global THREE, as if three.js were included via HTML
 THREE = (window.THREE ?= require('three'))
@@ -39,6 +40,13 @@ init = ->
   # Add "Test" to scene
   geometry = new THREE.TextGeometry("test", {size:200, height:0, curveSegments:0, font:"helvetiker", weight:"bold", style:"normal"})
   mesh = new THREE.Mesh( geometry, materials.volumetric )
+  # mesh.castShadow = true
+  # mesh.receiveShadow = true
+  scene.add( mesh )
+
+  geometry = new THREE.TextGeometry("test", {size:200, height:0, curveSegments:0, font:"helvetiker", weight:"bold", style:"normal"})
+  mesh = new THREE.Mesh( geometry, materials.volumetric )
+  mesh.rotation.x = -Math.PI / 2
   # mesh.castShadow = true
   # mesh.receiveShadow = true
   scene.add( mesh )

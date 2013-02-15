@@ -1,4 +1,11 @@
-# TODO not used ATM
+@createWorker = ( script, callback ) ->
+  createObjectURL = window.URL.createObjectURL ? window.webkitURL.createObjectURL
+  blob = new Blob [script]
+  worker = new Worker createObjectURL new Blob [script]
+  worker.onmessage = callback
+  return worker
+
+# Below are not not used ATM
 
 # jquery extensions
 jQuery.fn.extend(

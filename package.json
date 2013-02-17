@@ -9,7 +9,6 @@
       "cookie":       "0.0.4",
       "express":      ">= 3.0.0",
       "async":        "0.1.22",
-      "sugar":        "1.2.5",
       "nogg":         "0.0.8",
       "coffeemugg":   "0.0.7",
       "marked":       ">= 0.2.7",

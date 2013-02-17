@@ -1,41 +1,45 @@
 THREE = (window.THREE ?= require('three'))
 
-@volumetric = new THREE.MeshPhongMaterial({
-  color:        0xaaaaaa
-  specular:     0x222222
-  ambient:      0x000000
-  shininess:    150
-  morphTargets: false
-  morphNormals: false
-  vertexColors: THREE.FaceColors
-  shading:      THREE.FlatShading
-})
+# http://www.html5rocks.com/en/tutorials/webgl/shaders/
+vertexShader = """
+  // create a shared variable for the
+  // VS and FS containing the normal
+  varying vec3 vNormal;
 
-@volumetricHighlighted = new THREE.MeshPhongMaterial({
-  color:        0xff8888
-  specular:     0x222222
-  ambient:      0x000000
-  shininess:    150
-  morphTargets: false
-  morphNormals: false
-  vertexColors: THREE.FaceColors
-  shading:      THREE.FlatShading
-})
+  void main() {
 
-@addLights = (scene) ->
-  # Add Hemispheric Light to scene, separates the Y axis
-  hemiLight = new THREE.HemisphereLight( 0xffffff, 0xffffff, 0.9 )
-  hemiLight.color.setHSV( 0.6, 0.75, 1 )
-  hemiLight.groundColor.setHSV( 0.095, 0.5, 1 )
-  # hemiLight.position.set( 0, Number.POSITIVE_INFINITY, 0 )
-  hemiLight.position.set( 0, 9999999, 0 )
-  scene.add( hemiLight )
+      // set the vNormal value with
+      // the attribute value passed
+      // in by Three.js
+      vNormal = normal;
 
-  # Add Directional Light to the scene  
-  directLight = new THREE.DirectionalLight( 0xffffff, 1 )
-  # directLight.position.set( 0, 0, Number.POSITIVE_INFINITY )
-  directLight.position.set( 0, 0, 9999999 )
-  directLight.color.setHSV( 0.0, 0.0, 0.7 )
-  scene.add( directLight )
+      gl_Position = projectionMatrix *
+                    modelViewMatrix *
+                    vec4(position,1.0);
+  }
+"""
+fragmentShader = """
+  // same name and type as VS
+  varying vec3 vNormal;
 
-  return {hemisphere:hemiLight, directional:directLight}
+  void main() {
+
+      // calc the dot product and clamp
+      // 0 -> 1 rather than -1 -> 1
+      vec3 light = vec3(0.5,0.2,1.0);
+        
+      // ensure it's normalized
+      light = normalize(light);
+    
+      // calculate the dot product of
+      // the light to the vertex normal
+      float dProd = max(0.0, dot(vNormal, light));
+    
+      // feed into our frag colour
+      gl_FragColor = vec4(dProd, dProd, dProd, 1.0);
+    
+  }
+"""
+
+# Default material
+@default = new THREE.ShaderMaterial({vertexShader, fragmentShader})

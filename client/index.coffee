@@ -15,7 +15,6 @@ window._typeface_js =
 # Global variables
 camera = scene = renderer = undefined
 controls = undefined
-headLamp = undefined
 
 init = ->
 
@@ -32,20 +31,15 @@ init = ->
   camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1, 10000 )
   camera.position.z = 1000
 
-  # Add lights to the scene,
-  # and make the directional light a lamp in the position of the camera
-  {directional} = materials.addLights( scene )
-  headLamp = directional
-
   # Add "Test" to scene
   geometry = new THREE.TextGeometry("test", {size:200, height:0, curveSegments:0, font:"helvetiker", weight:"bold", style:"normal"})
-  mesh = new THREE.Mesh( geometry, materials.volumetric )
+  mesh = new THREE.Mesh( geometry, materials.default )
   # mesh.castShadow = true
   # mesh.receiveShadow = true
   scene.add( mesh )
 
   geometry = new THREE.TextGeometry("test", {size:200, height:0, curveSegments:0, font:"helvetiker", weight:"bold", style:"normal"})
-  mesh = new THREE.Mesh( geometry, materials.volumetric )
+  mesh = new THREE.Mesh( geometry, materials.default )
   mesh.rotation.x = -Math.PI / 2
   # mesh.castShadow = true
   # mesh.receiveShadow = true
@@ -61,13 +55,12 @@ init = ->
   scene.add( grid )
 
   # Control mechanism
-  controls = require('client/control').installControls({camera, elem:renderer.domElement, render})
+  controls = require('client/control').installControls({camera, elem:renderer.domElement, render, scene})
 
 animate = ->
   # note: three.js includes requestAnimationFrame shim
   requestAnimationFrame( animate )
   controls.update()
-  headLamp.position = camera.position
 
 render = -> renderer.render( scene, camera )
 
@@ -82,7 +75,7 @@ $ ->
       console.log(err, data) if err?
       geometry = require('voxel-geometry').parsers.stl.parse( data )
       # material = new THREE.MeshBasicMaterial( { color: 0x000000, wireframe: true } )
-      mesh = new THREE.Mesh( geometry, materials.volumetric )
+      mesh = new THREE.Mesh( geometry, materials.default )
       window.mesh = mesh # last mesh, for debugging
       scene.add( mesh )
       render()

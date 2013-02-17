@@ -55,6 +55,19 @@
 # Gets the last item of an array(-like) object.
 @last = (array, back) -> array[array.length - (back or 0) - 1]
 
+# Unique array by map function.
+# `map` should be (x)->y , where y is an object index.
+@unique = (array, map) ->
+  map ?= (x) -> x
+  mapped = {}
+  uniqed = []
+  for item in array
+    key = map item
+    if not mapped[key]
+      mapped[key] = 1
+      uniqed.push item
+  return uniqed
+
 @toAscii = toAscii = (str) ->
   return str.replace /[\u001b\u0080-\uffff]/g, (ch) ->
     code = ch.charCodeAt(0).toString(16)

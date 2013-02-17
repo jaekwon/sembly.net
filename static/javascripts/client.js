@@ -42,10 +42,13 @@
         var process = require("__browserify_process");
         var __filename = "/Users/jae/workspace/src/sembly.net/client/control.coffee";
         (function() {
+  var pickObjects, unique;
+
+  unique = require('client/helpers').unique;
 
   this.installControls = function(_arg) {
-    var camera, controls, elem, isDrag, render, selected;
-    camera = _arg.camera, elem = _arg.elem, render = _arg.render;
+    var camera, controls, elem, isDrag, render, scene, selected;
+    camera = _arg.camera, elem = _arg.elem, scene = _arg.scene, render = _arg.render;
     controls = new THREE.TrackballControls(camera, elem);
     controls.rotateSpeed = 1.0;
     controls.zoomSpeed = 10;
@@ -71,11 +74,11 @@
       if (isDrag) {
         return true;
       }
-      intersects = geom.pickObjects(event, scene, camera).unique(function(_arg1) {
+      intersects = unique(pickObjects(event, scene, camera), (function(_arg1) {
         var object;
         object = _arg1.object;
         return object.id;
-      });
+      }));
       iObjects = intersects.map(function(_arg1) {
         var object;
         object = _arg1.object;
@@ -94,10 +97,6 @@
       } else {
         newSelected = iObjects[0];
       }
-      if (selected != null) {
-        selected.material.color.setHex(0x000000);
-      }
-      newSelected.material.color.setHex(0xFF0000);
       selected = newSelected;
       render();
       return true;
@@ -105,7 +104,7 @@
     return controls;
   };
 
-  this.pickObjects = function(event, scene, camera) {
+  this.pickObjects = pickObjects = function(event, scene, camera) {
     var offsetX, offsetY, projector, raycaster, target, vector, vector_x, vector_y;
     target = event.target, offsetX = event.offsetX, offsetY = event.offsetY;
     projector = new THREE.Projector();
@@ -113,7 +112,7 @@
     vector_y = offsetY / target.height * 2.0 - 1.0;
     vector = new THREE.Vector3(vector_x, -vector_y, 0.5);
     projector.unprojectVector(vector, camera);
-    raycaster = new THREE.Raycaster(camera.position, vector.subSelf(camera.position).normalize());
+    raycaster = new THREE.Raycaster(camera.position, vector.sub(camera.position).normalize());
     return raycaster.intersectObjects(scene.children);
   };
 
@@ -301,6 +300,26 @@ require['client/helpers'] = function() {
     return array[array.length - (back || 0) - 1];
   };
 
+  this.unique = function(array, map) {
+    var item, key, mapped, uniqed, _i, _len;
+    if (map == null) {
+      map = function(x) {
+        return x;
+      };
+    }
+    mapped = {};
+    uniqed = [];
+    for (_i = 0, _len = array.length; _i < _len; _i++) {
+      item = array[_i];
+      key = map(item);
+      if (!mapped[key]) {
+        mapped[key] = 1;
+        uniqed.push(item);
+      }
+    }
+    return uniqed;
+  };
+
   this.toAscii = toAscii = function(str) {
     return str.replace(/[\u001b\u0080-\uffff]/g, function(ch) {
       var code;
@@ -459,7 +478,7 @@ require['client'] = function() {
         var process = require("__browserify_process");
         var __filename = "/Users/jae/workspace/src/sembly.net/client/index.coffee";
         (function() {
-  var THREE, View, animate, camera, controls, createWorker, hasWebGL, headLamp, init, materials, render, renderer, scene, _ref;
+  var THREE, View, animate, camera, controls, createWorker, hasWebGL, init, materials, render, renderer, scene, _ref;
 
   View = require('client/view').View;
 
@@ -482,10 +501,8 @@ require['client'] = function() {
 
   controls = void 0;
 
-  headLamp = void 0;
-
   init = function() {
-    var directional, geometry, grid, mesh;
+    var geometry, grid, mesh;
     if (hasWebGL()) {
       renderer = new THREE.WebGLRenderer();
     } else {
@@ -496,8 +513,6 @@ require['client'] = function() {
     scene = new THREE.Scene();
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 10000);
     camera.position.z = 1000;
-    directional = materials.addLights(scene).directional;
-    headLamp = directional;
     geometry = new THREE.TextGeometry("test", {
       size: 200,
       height: 0,
@@ -506,7 +521,7 @@ require['client'] = function() {
       weight: "bold",
       style: "normal"
     });
-    mesh = new THREE.Mesh(geometry, materials.volumetric);
+    mesh = new THREE.Mesh(geometry, materials["default"]);
     scene.add(mesh);
     geometry = new THREE.TextGeometry("test", {
       size: 200,
@@ -516,7 +531,7 @@ require['client'] = function() {
       weight: "bold",
       style: "normal"
     });
-    mesh = new THREE.Mesh(geometry, materials.volumetric);
+    mesh = new THREE.Mesh(geometry, materials["default"]);
     mesh.rotation.x = -Math.PI / 2;
     scene.add(mesh);
     grid = new THREE.Mesh(new THREE.PlaneGeometry(1000, 1000, 20, 20), new THREE.MeshBasicMaterial({
@@ -528,14 +543,14 @@ require['client'] = function() {
     return controls = require('client/control').installControls({
       camera: camera,
       elem: renderer.domElement,
-      render: render
+      render: render,
+      scene: scene
     });
   };
 
   animate = function() {
     requestAnimationFrame(animate);
-    controls.update();
-    return headLamp.position = camera.position;
+    return controls.update();
   };
 
   render = function() {
@@ -554,7 +569,7 @@ require['client'] = function() {
         console.log(err, data);
       }
       geometry = require('voxel-geometry').parsers.stl.parse(data);
-      mesh = new THREE.Mesh(geometry, materials.volumetric);
+      mesh = new THREE.Mesh(geometry, materials["default"]);
       window.mesh = mesh;
       scene.add(mesh);
       return render();
@@ -648,48 +663,18 @@ require['client/three_materials'] = function() {
         var process = require("__browserify_process");
         var __filename = "/Users/jae/workspace/src/sembly.net/client/three_materials.coffee";
         (function() {
-  var THREE, _ref;
+  var THREE, fragmentShader, vertexShader, _ref;
 
   THREE = ((_ref = window.THREE) != null ? _ref : window.THREE = require('three'));
 
-  this.volumetric = new THREE.MeshPhongMaterial({
-    color: 0xaaaaaa,
-    specular: 0x222222,
-    ambient: 0x000000,
-    shininess: 150,
-    morphTargets: false,
-    morphNormals: false,
-    vertexColors: THREE.FaceColors,
-    shading: THREE.FlatShading
-  });
+  vertexShader = "// create a shared variable for the\n// VS and FS containing the normal\nvarying vec3 vNormal;\n\nvoid main() {\n\n    // set the vNormal value with\n    // the attribute value passed\n    // in by Three.js\n    vNormal = normal;\n\n    gl_Position = projectionMatrix *\n                  modelViewMatrix *\n                  vec4(position,1.0);\n}";
 
-  this.volumetricHighlighted = new THREE.MeshPhongMaterial({
-    color: 0xff8888,
-    specular: 0x222222,
-    ambient: 0x000000,
-    shininess: 150,
-    morphTargets: false,
-    morphNormals: false,
-    vertexColors: THREE.FaceColors,
-    shading: THREE.FlatShading
-  });
+  fragmentShader = "// same name and type as VS\nvarying vec3 vNormal;\n\nvoid main() {\n\n    // calc the dot product and clamp\n    // 0 -> 1 rather than -1 -> 1\n    vec3 light = vec3(0.5,0.2,1.0);\n      \n    // ensure it's normalized\n    light = normalize(light);\n  \n    // calculate the dot product of\n    // the light to the vertex normal\n    float dProd = max(0.0, dot(vNormal, light));\n  \n    // feed into our frag colour\n    gl_FragColor = vec4(dProd, dProd, dProd, 1.0);\n  \n}";
 
-  this.addLights = function(scene) {
-    var directLight, hemiLight;
-    hemiLight = new THREE.HemisphereLight(0xffffff, 0xffffff, 0.9);
-    hemiLight.color.setHSV(0.6, 0.75, 1);
-    hemiLight.groundColor.setHSV(0.095, 0.5, 1);
-    hemiLight.position.set(0, 9999999, 0);
-    scene.add(hemiLight);
-    directLight = new THREE.DirectionalLight(0xffffff, 1);
-    directLight.position.set(0, 0, 9999999);
-    directLight.color.setHSV(0.0, 0.0, 0.7);
-    scene.add(directLight);
-    return {
-      hemisphere: hemiLight,
-      directional: directLight
-    };
-  };
+  this["default"] = new THREE.ShaderMaterial({
+    vertexShader: vertexShader,
+    fragmentShader: fragmentShader
+  });
 
 }).call(this);
 

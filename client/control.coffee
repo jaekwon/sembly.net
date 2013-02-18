@@ -1,4 +1,16 @@
 {unique} = require 'client/helpers'
+materials = require 'client/three_materials'
+
+DRAG_THRESHOLD = 5.0
+
+# Given screen coordinates 'start' and current coordinates 'current',
+# return the floatingpoint distance between the two.
+# start: {offsetX, offsetY}
+# end:   {offsetX, offsetY}
+screenDistance = (start, current) ->
+  xSq = Math.pow (start.offsetX - current.offsetX), 2.0
+  ySq = Math.pow (start.offsetY - current.offsetY), 2.0
+  return Math.pow (xSq + ySq), 0.5
 
 # Installs control onto a DOM element.
 # camera: THREE camera
@@ -21,11 +33,17 @@
 
   # Click & select control
   selected = undefined
+  mouseDownEvent = undefined
   isDrag = no
-  $(elem).mousemove (event) ->
-    isDrag = yes if event.which is 1 # mouse is down
   $(elem).mousedown (event) ->
+    mouseDownEvent = event
     isDrag = no
+  $(elem).mousemove (event) ->
+    return unless event.which is 1 # mouse is down
+    # detect "dragging", which is sure to be happening
+    # when moveDistance is above some threshold
+    moveDistance = screenDistance mouseDownEvent, event
+    isDrag = yes if moveDistance > DRAG_THRESHOLD
   $(elem).mouseup (event) ->
     return true if isDrag
     intersects = unique( pickObjects( event, scene, camera ), (({object}) -> object.id) )
@@ -39,6 +57,8 @@
     # materials.volumetric.color.setHex 0x666666
     # selected.material    = materials.volumetric if selected?
     # newSelected.material = materials.volumetricHighlighted
+    selected.material     = materials.default if selected?
+    newSelected.material  = materials.highlighted
     selected = newSelected
     render()
     return true

@@ -42,12 +42,23 @@
         var process = require("__browserify_process");
         var __filename = "/Users/jae/workspace/src/sembly.net/client/control.coffee";
         (function() {
-  var pickObjects, unique;
+  var DRAG_THRESHOLD, materials, pickObjects, screenDistance, unique;
 
   unique = require('client/helpers').unique;
 
+  materials = require('client/three_materials');
+
+  DRAG_THRESHOLD = 5.0;
+
+  screenDistance = function(start, current) {
+    var xSq, ySq;
+    xSq = Math.pow(start.offsetX - current.offsetX, 2.0);
+    ySq = Math.pow(start.offsetY - current.offsetY, 2.0);
+    return Math.pow(xSq + ySq, 0.5);
+  };
+
   this.installControls = function(_arg) {
-    var camera, controls, elem, isDrag, render, scene, selected;
+    var camera, controls, elem, isDrag, mouseDownEvent, render, scene, selected;
     camera = _arg.camera, elem = _arg.elem, scene = _arg.scene, render = _arg.render;
     controls = new THREE.TrackballControls(camera, elem);
     controls.rotateSpeed = 1.0;
@@ -60,14 +71,21 @@
     controls.keys = [65, 83, 68];
     controls.addEventListener('change', render);
     selected = void 0;
+    mouseDownEvent = void 0;
     isDrag = false;
+    $(elem).mousedown(function(event) {
+      mouseDownEvent = event;
+      return isDrag = false;
+    });
     $(elem).mousemove(function(event) {
-      if (event.which === 1) {
+      var moveDistance;
+      if (event.which !== 1) {
+        return;
+      }
+      moveDistance = screenDistance(mouseDownEvent, event);
+      if (moveDistance > DRAG_THRESHOLD) {
         return isDrag = true;
       }
-    });
-    $(elem).mousedown(function(event) {
-      return isDrag = false;
     });
     $(elem).mouseup(function(event) {
       var iObjects, intersects, newSelected, selectedIndex;
@@ -97,6 +115,10 @@
       } else {
         newSelected = iObjects[0];
       }
+      if (selected != null) {
+        selected.material = materials["default"];
+      }
+      newSelected.material = materials.highlighted;
       selected = newSelected;
       render();
       return true;
@@ -663,17 +685,24 @@ require['client/three_materials'] = function() {
         var process = require("__browserify_process");
         var __filename = "/Users/jae/workspace/src/sembly.net/client/three_materials.coffee";
         (function() {
-  var THREE, fragmentShader, vertexShader, _ref;
+  var THREE, fragmentShader, fragmentShaderHighlighted, vertexShader, _ref;
 
   THREE = ((_ref = window.THREE) != null ? _ref : window.THREE = require('three'));
 
   vertexShader = "// create a shared variable for the\n// VS and FS containing the normal\nvarying vec3 vNormal;\n\nvoid main() {\n\n    // set the vNormal value with\n    // the attribute value passed\n    // in by Three.js\n    vNormal = normal;\n\n    gl_Position = projectionMatrix *\n                  modelViewMatrix *\n                  vec4(position,1.0);\n}";
 
-  fragmentShader = "// same name and type as VS\nvarying vec3 vNormal;\n\nvoid main() {\n\n    // calc the dot product and clamp\n    // 0 -> 1 rather than -1 -> 1\n    vec3 light = vec3(0.5,0.2,1.0);\n      \n    // ensure it's normalized\n    light = normalize(light);\n  \n    // calculate the dot product of\n    // the light to the vertex normal\n    float dProd = max(0.0, dot(vNormal, light));\n  \n    // feed into our frag colour\n    gl_FragColor = vec4(dProd, dProd, dProd, 1.0);\n  \n}";
+  fragmentShader = "// same name and type as VS\nvarying vec3 vNormal;\n\nvoid main() {\n\n    // calc the dot product and clamp\n    // 0 -> 1 rather than -1 -> 1\n    vec3 light = vec3(0.5,0.2,1.0);\n      \n    // ensure it's normalized\n    light = normalize(light);\n  \n    // calculate the dot product of\n    // the light to the vertex normal\n    float dProd = ( dot(vNormal, light) * 0.5 + 0.5 ) * 0.5 + 0.4;\n  \n    // feed into our frag colour\n    gl_FragColor = vec4(dProd, dProd, dProd, 1.0);\n  \n}";
+
+  fragmentShaderHighlighted = "// same name and type as VS\nvarying vec3 vNormal;\n\nvoid main() {\n\n    // calc the dot product and clamp\n    // 0 -> 1 rather than -1 -> 1\n    vec3 light = vec3(0.5,0.2,1.0);\n      \n    // ensure it's normalized\n    light = normalize(light);\n  \n    // calculate the dot product of\n    // the light to the vertex normal\n    float dProd = ( dot(vNormal, light) * 0.5 + 0.5 ) * 0.5 + 0.4;\n  \n    // feed into our frag colour\n    gl_FragColor = vec4(dProd * 1.0, dProd * 1.0, dProd * 0.8, 1.0);\n  \n}";
 
   this["default"] = new THREE.ShaderMaterial({
     vertexShader: vertexShader,
     fragmentShader: fragmentShader
+  });
+
+  this.highlighted = new THREE.ShaderMaterial({
+    vertexShader: vertexShader,
+    fragmentShader: fragmentShaderHighlighted
   });
 
 }).call(this);

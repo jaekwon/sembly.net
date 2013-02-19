@@ -1,3 +1,4 @@
+{CSG, CAG} = require 'csg'
 {View} = require 'client/view'
 {blockDrag, makeDraggable} = require 'client/draggable'
 
@@ -29,7 +30,7 @@ fileInputEl = (cb) ->
   singleUse     = options?.singleUse    ? no
 
   # Construct Widget View
-  view = new View(background:'rgba(200,200,200,0.8)', top:200, left:200)
+  view = new View(background:'rgba(200,200,200,0.8)', top:20, left:20)
   view.write('import local file\n')
   view.append fileInputEl (event) ->
     # After file load...
@@ -70,7 +71,7 @@ fileInputEl = (cb) ->
   tabSize     = options?.tabSize  ? 2
 
   # Construct Widget View
-  view = new View(background:'rgba(200,200,200,0.8)', top:400, left:200, width:480)
+  view = new View(background:'rgba(200,200,200,0.8)', top:180, left:20, width:480)
   view.content.addClass 'editor_inner'
 
   # Construct CodeMirror
@@ -91,6 +92,27 @@ fileInputEl = (cb) ->
   # mirror.setMarker 0, '● ', 'cm-bracket'
   # Fix to set height of editor
   setTimeout (->mirror.setValue('')), 0
+
+  # Add 'RUN' button
+  view.append $('<hr/>')
+  view.append $('<button/>').text('RUN').click (e) ->
+    console.log mirror.getValue()
+    # DEMO
+    resolution = 24 # increase to get smoother corners (will get slow!)
+    cube1   = CSG.roundedCube(  {center: [0,0,0],   radius: [10,10,10], roundradius: 2, resolution: resolution} )
+    sphere1 = CSG.sphere(       {center: [5, 5, 5], radius: 10,                         resolution: resolution} )
+    sphere2 = sphere1.translate([12, 5, 0])
+    sphere3 = CSG.sphere(       {center: [20, 0, 0],radius: 30,                         resolution: resolution} )
+    
+    result = cube1
+    result = result.union(sphere1)
+    result = result.subtract(sphere2)
+    result = result.intersect(sphere3)
+    window.lastCSG = result
+    # console.log "created #{result}"
+    # TODO convert this mesh to THREE and display.
+    return result
+    # DEMO END
 
   makeDraggable view.el
   blockDrag view.content

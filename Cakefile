@@ -21,6 +21,7 @@ task 'browser', 'Package javascript for browser', ->
     {name:'voxel-geometry',  path:'node_modules/voxel-geometry/*.js'}
     {name:'binary-xhr',      path:'node_modules/binary-xhr/*.js'}
     {name:'inherits',        path:'static/javascripts/empty.js'}
+    {name:'csg',             path:'static/javascripts/csg.js'}
   ], "window.require = require; require('client')();", minimize:no
   fs.writeFileSync 'static/javascripts/client.js', code, 'utf8'
   fs.writeFileSync 'static/javascripts/client.min.js', minCode, 'utf8' if minCode?

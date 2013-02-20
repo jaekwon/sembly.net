@@ -81,14 +81,15 @@ $ ->
       render()
   )
 
-  editorView = require('client/widgets').editorView(
-    (err, text) ->
-      console.log(err, text) if err?
-      console.log "yay"
+  csgEditorView = require('client/widgets').csgEditorView(
+    (err, geometry) ->
+      console.log(err, geometry) if err?
+      # Do something with geometry
+      console.log {geometry}
   )
 
   $(document.body).append fileLoaderView.el
-  $(document.body).append editorView.el
+  $(document.body).append csgEditorView.el
 
 module.exports = ->
   # This gets called upon page load.

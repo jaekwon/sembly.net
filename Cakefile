@@ -13,6 +13,13 @@ task 'server', 'Run the server', ->
   run 'coffee server'
 
 task 'browser', 'Package javascript for browser', ->
+  buildBrowserPackage()
+
+task 'build', ->
+  buildBrowserPackage ->
+    log "Build done!"
+
+buildBrowserPackage = (next) ->
   {code,minCode} = demodule [
     {name:'client',          path:'client/**.coffee'}
     {name:'client',          path:'client/**.js'}
@@ -25,6 +32,7 @@ task 'browser', 'Package javascript for browser', ->
   ], "window.require = require; require('client')();", minimize:no
   fs.writeFileSync 'static/javascripts/client.js', code, 'utf8'
   fs.writeFileSync 'static/javascripts/client.min.js', minCode, 'utf8' if minCode?
+  next?()
 
 run = (args...) ->
   for a in args

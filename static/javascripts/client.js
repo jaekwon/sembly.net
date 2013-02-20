@@ -580,7 +580,7 @@ require['client'] = function() {
   };
 
   $(function() {
-    var editorView, fileLoaderView;
+    var csgEditorView, fileLoaderView;
     init();
     animate();
     fileLoaderView = require('client/widgets').fileLoaderView({
@@ -596,14 +596,16 @@ require['client'] = function() {
       scene.add(mesh);
       return render();
     });
-    editorView = require('client/widgets').editorView(function(err, text) {
+    csgEditorView = require('client/widgets').csgEditorView(function(err, geometry) {
       if (err != null) {
-        console.log(err, text);
+        console.log(err, geometry);
       }
-      return console.log("yay");
+      return console.log({
+        geometry: geometry
+      });
     });
     $(document.body).append(fileLoaderView.el);
-    return $(document.body).append(editorView.el);
+    return $(document.body).append(csgEditorView.el);
   });
 
   module.exports = function() {
@@ -678,6 +680,275 @@ require['client/misc'] = function() {
 };
 require['client/misc'].nonce = nonce;
 
+require['client/three_csg'] = function() {
+    return new function() {
+        var exports = require['client/three_csg'] = this;
+        var module = {exports:exports};
+        var process = require("__browserify_process");
+        var __filename = "/Users/jae/workspace/src/sembly.net/client/three_csg.coffee";
+        (function() {
+  var THREE;
+
+  THREE = require('three');
+
+  THREE.CSG = {
+    toCSG: function(three_model, offset, rotation) {
+      var geometry, i, polygons, rotation_matrix, v, v_cor, vertices;
+      i = void 0;
+      geometry = void 0;
+      offset = void 0;
+      polygons = void 0;
+      vertices = void 0;
+      rotation_matrix = void 0;
+      if (three_model instanceof THREE.Mesh) {
+        geometry = three_model.geometry;
+        offset = offset || three_model.position;
+        rotation = rotation || three_model.rotation;
+      } else if (three_model instanceof THREE.Geometry) {
+        geometry = three_model;
+        offset = offset || new THREE.Vector3(0, 0, 0);
+        rotation = rotation || new THREE.Vector3(0, 0, 0);
+      } else {
+        throw "Model type not supported.";
+      }
+      rotation_matrix = new THREE.Matrix4().setRotationFromEuler(rotation);
+      polygons = [];
+      i = 0;
+      while (i < geometry.faces.length) {
+        if (geometry.faces[i] instanceof THREE.Face3) {
+          vertices = [];
+          v = rotation_matrix.multiplyVector3(geometry.vertices[geometry.faces[i].a].clone().addSelf(offset));
+          v_cor = new CSG.Vector3D(v.x, v.y, v.z);
+          vertices.push(new CSG.Vertex(v_cor, [geometry.faces[i].normal.x, geometry.faces[i].normal.y, geometry.faces[i].normal.z]));
+          v = rotation_matrix.multiplyVector3(geometry.vertices[geometry.faces[i].b].clone().addSelf(offset));
+          v_cor = new CSG.Vector3D(v.x, v.y, v.z);
+          vertices.push(new CSG.Vertex(v_cor, [geometry.faces[i].normal.x, geometry.faces[i].normal.y, geometry.faces[i].normal.z]));
+          v = rotation_matrix.multiplyVector3(geometry.vertices[geometry.faces[i].c].clone().addSelf(offset));
+          v_cor = new CSG.Vector3D(v.x, v.y, v.z);
+          vertices.push(new CSG.Vertex(v_cor, [geometry.faces[i].normal.x, geometry.faces[i].normal.y, geometry.faces[i].normal.z]));
+          polygons.push(new CSG.Polygon(vertices));
+        } else if (geometry.faces[i] instanceof THREE.Face4) {
+          vertices = [];
+          v = rotation_matrix.multiplyVector3(geometry.vertices[geometry.faces[i].a].clone().addSelf(offset));
+          v_cor = new CSG.Vector3D(v.x, v.y, v.z);
+          vertices.push(new CSG.Vertex(v_cor, [geometry.faces[i].normal.x, geometry.faces[i].normal.y, geometry.faces[i].normal.z]));
+          v = rotation_matrix.multiplyVector3(geometry.vertices[geometry.faces[i].b].clone().addSelf(offset));
+          v_cor = new CSG.Vector3D(v.x, v.y, v.z);
+          vertices.push(new CSG.Vertex(v_cor, [geometry.faces[i].normal.x, geometry.faces[i].normal.y, geometry.faces[i].normal.z]));
+          v = rotation_matrix.multiplyVector3(geometry.vertices[geometry.faces[i].d].clone().addSelf(offset));
+          v_cor = new CSG.Vector3D(v.x, v.y, v.z);
+          vertices.push(new CSG.Vertex(v_cor, [geometry.faces[i].normal.x, geometry.faces[i].normal.y, geometry.faces[i].normal.z]));
+          polygons.push(new CSG.Polygon(vertices));
+          vertices = [];
+          v = rotation_matrix.multiplyVector3(geometry.vertices[geometry.faces[i].b].clone().addSelf(offset));
+          v_cor = new CSG.Vector3D(v.x, v.y, v.z);
+          vertices.push(new CSG.Vertex(v_cor, [geometry.faces[i].normal.x, geometry.faces[i].normal.y, geometry.faces[i].normal.z]));
+          v = rotation_matrix.multiplyVector3(geometry.vertices[geometry.faces[i].c].clone().addSelf(offset));
+          v_cor = new CSG.Vector3D(v.x, v.y, v.z);
+          vertices.push(new CSG.Vertex(v_cor, [geometry.faces[i].normal.x, geometry.faces[i].normal.y, geometry.faces[i].normal.z]));
+          v = rotation_matrix.multiplyVector3(geometry.vertices[geometry.faces[i].d].clone().addSelf(offset));
+          v_cor = new CSG.Vector3D(v.x, v.y, v.z);
+          vertices.push(new CSG.Vertex(v_cor, [geometry.faces[i].normal.x, geometry.faces[i].normal.y, geometry.faces[i].normal.z]));
+          polygons.push(new CSG.Polygon(vertices));
+        } else {
+          throw "Model contains unsupported face.";
+        }
+        i++;
+      }
+      console.log("THREE.CSG toCSG done");
+      return CSG.fromPolygons(polygons);
+    },
+    fromCSG: function(csg_model) {
+      var color, end, face, faceNormal, fetchVertexIndex, found, i, i1, i2, i3, i4, index, j, polyVertices, polygon, polygonIndex, polygons, srcNormal, start, three_geometry, v, vertex, vertexIndex, verticesIndex, vindex, _i, _j, _k, _l, _len, _len1, _m, _ref, _ref1, _ref2,
+        _this = this;
+      start = new Date().getTime();
+      csg_model = csg_model.canonicalized();
+      csg_model = csg_model.reTesselated();
+      three_geometry = new THREE.Geometry();
+      polygons = csg_model.toPolygons();
+      verticesIndex = {};
+      fetchVertexIndex = function(vertex, index) {
+        var key, result, threeVertex, v, x, y, z, _ref;
+        x = vertex.pos.x;
+        y = vertex.pos.y;
+        z = vertex.pos.z;
+        key = "" + x + "," + y + "," + z;
+        if (!(key in verticesIndex)) {
+          threeVertex = new THREE.Vector3(vertex.pos._x, vertex.pos._y, vertex.pos._z);
+          result = [index, threeVertex];
+          verticesIndex[key] = result;
+          result = [index, threeVertex, false];
+          return result;
+        } else {
+          _ref = verticesIndex[key], index = _ref[0], v = _ref[1];
+          return [index, v, true];
+        }
+      };
+      vertexIndex = 0;
+      for (polygonIndex = _i = 0, _len = polygons.length; _i < _len; polygonIndex = ++_i) {
+        polygon = polygons[polygonIndex];
+        color = new THREE.Color(0xaaaaaa);
+        try {
+          color.r = polygon.shared.color[0];
+          color.g = polygon.shared.color[1];
+          color.b = polygon.shared.color[2];
+        } catch (_error) {}
+        polyVertices = [];
+        _ref = polygon.vertices;
+        for (vindex = _j = 0, _len1 = _ref.length; _j < _len1; vindex = ++_j) {
+          vertex = _ref[vindex];
+          _ref1 = fetchVertexIndex(vertex, vertexIndex), index = _ref1[0], v = _ref1[1], found = _ref1[2];
+          polyVertices.push(index);
+          if (!found) {
+            three_geometry.vertices.push(v);
+            vertexIndex += 1;
+          }
+        }
+        srcNormal = polygon.plane.normal;
+        faceNormal = new THREE.Vector3(srcNormal.x, srcNormal.z, srcNormal.y);
+        if (polygon.vertices.length === 4) {
+          i1 = polyVertices[0];
+          i2 = polyVertices[1];
+          i3 = polyVertices[2];
+          i4 = polyVertices[3];
+          face = new THREE.Face4(i1, i2, i3, i4, faceNormal);
+          for (i = _k = 0; _k <= 3; i = ++_k) {
+            face.vertexColors[i] = color;
+          }
+          three_geometry.faces.push(face);
+          three_geometry.faceVertexUvs[0].push(new THREE.Vector2());
+        } else {
+          for (i = _l = 2, _ref2 = polyVertices.length; 2 <= _ref2 ? _l < _ref2 : _l > _ref2; i = 2 <= _ref2 ? ++_l : --_l) {
+            i1 = polyVertices[0];
+            i2 = polyVertices[i - 1];
+            i3 = polyVertices[i];
+            face = new THREE.Face3(i1, i2, i3, faceNormal);
+            for (j = _m = 0; _m < 3; j = ++_m) {
+              face.vertexColors[j] = color;
+            }
+            three_geometry.faces.push(face);
+            three_geometry.faceVertexUvs[0].push(new THREE.Vector2());
+          }
+        }
+      }
+      three_geometry.computeBoundingBox();
+      three_geometry.computeCentroids();
+      end = new Date().getTime();
+      console.log("Conversion to three.geometry time: " + (end - start));
+      return three_geometry;
+    },
+    fromCSG_: function(csg_model) {
+      var b, color, connectors, end, face, i, j, poly, polygons, properties, searchForConnectors, start, three_geometry, tmp, vertices;
+      i = void 0;
+      j = void 0;
+      vertices = void 0;
+      face = void 0;
+      three_geometry = new THREE.Geometry();
+      start = new Date().getTime();
+      polygons = csg_model.toPolygons();
+      end = new Date().getTime();
+      console.log("Csg polygon fetch time: " + (end - start));
+      properties = csg_model.properties;
+      start = new Date().getTime();
+      i = 0;
+      while (i < polygons.length) {
+        color = new THREE.Color(0xaaaaaa);
+        try {
+          poly = polygons[i];
+          color.r = poly.shared.color[0];
+          color.g = poly.shared.color[1];
+          color.b = poly.shared.color[2];
+        } catch (_error) {}
+        vertices = [];
+        j = 0;
+        while (j < polygons[i].vertices.length) {
+          vertices.push(this.getGeometryVertice(three_geometry, polygons[i].vertices[j].pos));
+          j++;
+        }
+        if (vertices[0] === vertices[vertices.length - 1]) {
+          vertices.pop();
+        }
+        j = 2;
+        while (j < vertices.length) {
+          tmp = new THREE.Vector3().copy(polygons[i].plane.normal);
+          b = tmp[2];
+          tmp[2] = tmp[1];
+          tmp[1] = b;
+          face = new THREE.Face3(vertices[0], vertices[j - 1], vertices[j], tmp);
+          face.vertexColors[0] = color;
+          face.vertexColors[1] = color;
+          face.vertexColors[2] = color;
+          three_geometry.faces.push(face);
+          three_geometry.faceVertexUvs[0].push(new THREE.Vector2());
+          j++;
+        }
+        i++;
+      }
+      end = new Date().getTime();
+      console.log("Conversion to three.geometry time: " + (end - start));
+      connectors = [];
+      searchForConnectors = function(obj) {
+        var axisvector, connector, geometry, index, point, prop, _results;
+        _results = [];
+        for (index in obj) {
+          prop = obj[index];
+          if ((typeof prop) !== "function") {
+            if (prop.constructor.name === "Connector") {
+              connector = {};
+              point = prop.point;
+              axisvector = prop.axisvector;
+              geometry = new THREE.CubeGeometry(10, 10, 10);
+              geometry.basePoint = new THREE.Vector3(point.x, point.y, point.z);
+              /*
+                          geometry = new THREE.Geometry()
+                          geometry.vertices.push(new THREE.Vector3(point.x, point.y, point.z))
+                          end = new THREE.Vector3(point.x+axisvector.x, point.y+axisvector.y, point.z+axisvector.z)
+                          end.multiplyScalar(3)
+                          geometry.vertices.push(end)
+              */
+
+              connectors.push(geometry);
+            }
+            /*
+                      try
+                        if "point" of prop
+                          #console.log "haspoint"
+                      catch error
+            */
+
+            _results.push(searchForConnectors(prop));
+          } else {
+            _results.push(void 0);
+          }
+        }
+        return _results;
+      };
+      return three_geometry;
+    },
+    getGeometryVertice: function(geometry, vertice_position) {
+      var i;
+      i = void 0;
+      i = 0;
+      while (i < geometry.vertices.length) {
+        if (geometry.vertices[i].x === vertice_position.x && geometry.vertices[i].y === vertice_position.y && geometry.vertices[i].z === vertice_position.z) {
+          return i;
+        }
+        i++;
+      }
+      geometry.vertices.push(new THREE.Vector3(vertice_position.x, vertice_position.y, vertice_position.z));
+      return geometry.vertices.length - 1;
+    }
+  };
+
+  return THREE.CSG;
+
+}).call(this);
+
+        return (require['client/three_csg'] = module.exports);
+    };
+};
+require['client/three_csg'].nonce = nonce;
+
 require['client/three_materials'] = function() {
     return new function() {
         var exports = require['client/three_materials'] = this;
@@ -746,12 +1017,10 @@ require['client/view'] = function() {
         this.left = 10;
       }
       if ((_ref5 = this.border) == null) {
-        this.border = 'none';
+        this.border = '1px solid #ccc';
       }
       if ((_ref6 = this.background) == null) {
-        this.background = randomColor({
-          alpha: 0.8
-        });
+        this.background = 'rgba(255,255,255,0.8)';
       }
       if (this.el == null) {
         this.el = $('<div/>');
@@ -831,13 +1100,15 @@ require['client/widgets'] = function() {
         var process = require("__browserify_process");
         var __filename = "/Users/jae/workspace/src/sembly.net/client/widgets.coffee";
         (function() {
-  var CAG, CSG, View, blockDrag, fileInputEl, makeDraggable, _ref, _ref1;
+  var CAG, CSG, View, blockDrag, editorView, fileInputEl, makeDraggable, _ref, _ref1;
 
   _ref = require('csg'), CSG = _ref.CSG, CAG = _ref.CAG;
 
   View = require('client/view').View;
 
   _ref1 = require('client/draggable'), blockDrag = _ref1.blockDrag, makeDraggable = _ref1.makeDraggable;
+
+  require('client/three_csg');
 
   fileInputEl = function(cb) {
     var inputEl;
@@ -859,7 +1130,6 @@ require['client/widgets'] = function() {
     responseType = (_ref3 = options != null ? options.responseType : void 0) != null ? _ref3 : 'arraybuffer';
     singleUse = (_ref4 = options != null ? options.singleUse : void 0) != null ? _ref4 : false;
     view = new View({
-      background: 'rgba(200,200,200,0.8)',
       top: 20,
       left: 20
     });
@@ -895,7 +1165,7 @@ require['client/widgets'] = function() {
     return view;
   };
 
-  this.editorView = function(options, saveCb, cancelCb) {
+  this.editorView = editorView = function(options, saveCb, cancelCb) {
     var mirror, mode, tabSize, view, _ref2, _ref3, _ref4;
     if (options instanceof Function) {
       _ref2 = [null, options, saveCb], options = _ref2[0], saveCb = _ref2[1], cancelCb = _ref2[2];
@@ -903,7 +1173,6 @@ require['client/widgets'] = function() {
     mode = (_ref3 = options != null ? options.mode : void 0) != null ? _ref3 : 'coffeescript';
     tabSize = (_ref4 = options != null ? options.tabSize : void 0) != null ? _ref4 : 2;
     view = new View({
-      background: 'rgba(200,200,200,0.8)',
       top: 180,
       left: 20,
       width: 480
@@ -926,36 +1195,44 @@ require['client/widgets'] = function() {
     }), 0);
     view.append($('<hr/>'));
     view.append($('<button/>').text('RUN').click(function(e) {
-      var cube1, resolution, result, sphere1, sphere2, sphere3;
-      console.log(mirror.getValue());
-      resolution = 24;
-      cube1 = CSG.roundedCube({
-        center: [0, 0, 0],
-        radius: [10, 10, 10],
-        roundradius: 2,
-        resolution: resolution
-      });
-      sphere1 = CSG.sphere({
-        center: [5, 5, 5],
-        radius: 10,
-        resolution: resolution
-      });
-      sphere2 = sphere1.translate([12, 5, 0]);
-      sphere3 = CSG.sphere({
-        center: [20, 0, 0],
-        radius: 30,
-        resolution: resolution
-      });
-      result = cube1;
-      result = result.union(sphere1);
-      result = result.subtract(sphere2);
-      result = result.intersect(sphere3);
-      window.lastCSG = result;
-      return result;
+      saveCb(mirror.getValue());
+      /*
+          # DEMO
+          resolution = 24 # increase to get smoother corners (will get slow!)
+          cube1   = CSG.roundedCube(  {center: [0,0,0],   radius: [10,10,10], roundradius: 2, resolution: resolution} )
+          sphere1 = CSG.sphere(       {center: [5, 5, 5], radius: 10,                         resolution: resolution} )
+          sphere2 = sphere1.translate([12, 5, 0])
+          sphere3 = CSG.sphere(       {center: [20, 0, 0],radius: 30,                         resolution: resolution} )
+          
+          result = cube1
+          result = result.union(sphere1)
+          result = result.subtract(sphere2)
+          result = result.intersect(sphere3)
+          window.lastCSG = result
+          # console.log "created #{result}"
+          # TODO convert this mesh to THREE and display.
+          return result
+          # DEMO END
+      */
+
+      return null;
     }));
     makeDraggable(view.el);
     blockDrag(view.content);
     return view;
+  };
+
+  this.csgEditorView = function(options, geomCb) {
+    var view, _ref2;
+    if (options instanceof Function) {
+      _ref2 = [null, options], options = _ref2[0], geomCb = _ref2[1];
+    }
+    return view = editorView(options, function(code) {
+      var fn, geometry;
+      fn = new Function("" + code);
+      geometry = fn();
+      return geomCb(null, geometry);
+    });
   };
 
 }).call(this);
@@ -37956,7 +38233,7 @@ require['voxel-geometry'] = function() {
         var exports = require['voxel-geometry'] = this;
         var module = {exports:exports};
         var process = require("__browserify_process");
-        var __filename = "/Users/jae/workspace/src/sembly.net/node_modules/voxel-geometry/index.js";
+        var __filename = "/Users/jae/workspace/src/voxel-geometry/index.js";
         // Generated by CoffeeScript 1.3.3
 (function() {
   var binaryXHR, stlParser;
@@ -38118,7 +38395,7 @@ require['voxel-geometry/stl_parser'] = function() {
         var exports = require['voxel-geometry/stl_parser'] = this;
         var module = {exports:exports};
         var process = require("__browserify_process");
-        var __filename = "/Users/jae/workspace/src/sembly.net/node_modules/voxel-geometry/stl_parser.js";
+        var __filename = "/Users/jae/workspace/src/voxel-geometry/stl_parser.js";
         // Generated by CoffeeScript 1.3.3
 
 /*

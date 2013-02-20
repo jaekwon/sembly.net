@@ -11,8 +11,10 @@
     # @height     ?= undefined
     @top        ?= 10
     @left       ?= 10
-    @border     ?= 'none'
-    @background ?= randomColor(alpha:0.8)
+    # @border     ?= 'none'
+    @border     ?= '1px solid #ccc'
+    # @background ?= randomColor(alpha:0.8)
+    @background ?= 'rgba(255,255,255,0.8)'
 
     @el = $('<div/>') unless @el?
     @el.addClass('view_el')

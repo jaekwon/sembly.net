@@ -2,6 +2,8 @@
 {View} = require 'client/view'
 {blockDrag, makeDraggable} = require 'client/draggable'
 
+require 'client/three_csg'
+
 fileInputEl = (cb) ->
   # Creates an $(el) that calls the given callback 'cb' upon file load.
 
@@ -30,7 +32,7 @@ fileInputEl = (cb) ->
   singleUse     = options?.singleUse    ? no
 
   # Construct Widget View
-  view = new View(background:'rgba(200,200,200,0.8)', top:20, left:20)
+  view = new View(top:20, left:20)
   view.write('import local file\n')
   view.append fileInputEl (event) ->
     # After file load...
@@ -56,7 +58,7 @@ fileInputEl = (cb) ->
 
   return view
 
-@editorView = (options, saveCb, cancelCb) ->
+@editorView = editorView = (options, saveCb, cancelCb) ->
   # This widget lets the user edit a file.
   # - options:
   #   * mode: CodeMirror mode, e.g. 'coffeescript'
@@ -71,7 +73,7 @@ fileInputEl = (cb) ->
   tabSize     = options?.tabSize  ? 2
 
   # Construct Widget View
-  view = new View(background:'rgba(200,200,200,0.8)', top:180, left:20, width:480)
+  view = new View(top:180, left:20, width:480)
   view.content.addClass 'editor_inner'
 
   # Construct CodeMirror
@@ -96,7 +98,8 @@ fileInputEl = (cb) ->
   # Add 'RUN' button
   view.append $('<hr/>')
   view.append $('<button/>').text('RUN').click (e) ->
-    console.log mirror.getValue()
+    saveCb( mirror.getValue() )
+    ###
     # DEMO
     resolution = 24 # increase to get smoother corners (will get slow!)
     cube1   = CSG.roundedCube(  {center: [0,0,0],   radius: [10,10,10], roundradius: 2, resolution: resolution} )
@@ -113,8 +116,20 @@ fileInputEl = (cb) ->
     # TODO convert this mesh to THREE and display.
     return result
     # DEMO END
+    ###
+    null
 
   makeDraggable view.el
   blockDrag view.content
 
   return view
+
+@csgEditorView = (options, geomCb) ->
+
+  # Shift arguments
+  [options, geomCb] = [null, options] if options instanceof Function
+
+  view = editorView options, (code) ->
+    fn = new Function("#{code}")
+    geometry = fn()
+    geomCb null, geometry

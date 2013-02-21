@@ -99,24 +99,6 @@ fileInputEl = (cb) ->
   view.append $('<hr/>')
   view.append $('<button/>').text('RUN').click (e) ->
     saveCb( mirror.getValue() )
-    ###
-    # DEMO
-    resolution = 24 # increase to get smoother corners (will get slow!)
-    cube1   = CSG.roundedCube(  {center: [0,0,0],   radius: [10,10,10], roundradius: 2, resolution: resolution} )
-    sphere1 = CSG.sphere(       {center: [5, 5, 5], radius: 10,                         resolution: resolution} )
-    sphere2 = sphere1.translate([12, 5, 0])
-    sphere3 = CSG.sphere(       {center: [20, 0, 0],radius: 30,                         resolution: resolution} )
-    
-    result = cube1
-    result = result.union(sphere1)
-    result = result.subtract(sphere2)
-    result = result.intersect(sphere3)
-    window.lastCSG = result
-    # console.log "created #{result}"
-    # TODO convert this mesh to THREE and display.
-    return result
-    # DEMO END
-    ###
     null
 
   makeDraggable view.el
@@ -130,6 +112,9 @@ fileInputEl = (cb) ->
   [options, geomCb] = [null, options] if options instanceof Function
 
   view = editorView options, (code) ->
-    fn = new Function("#{code}")
-    geometry = fn()
+    fn = new Function('CSG', 'CAG', """
+      'use strict';
+      #{code}
+    """)
+    geometry = fn(CSG, CAG)
     geomCb null, geometry

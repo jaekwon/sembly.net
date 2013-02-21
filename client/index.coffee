@@ -32,14 +32,14 @@ init = ->
   camera.position.z = 1000
 
   # Add "Test" to scene
-  geometry = new THREE.TextGeometry("test", {size:200, height:0, curveSegments:0, font:"helvetiker", weight:"bold", style:"normal"})
-  mesh = new THREE.Mesh( geometry, materials.default )
+  geom = new THREE.TextGeometry("test", {size:200, height:0, curveSegments:0, font:"helvetiker", weight:"bold", style:"normal"})
+  mesh = new THREE.Mesh( geom, materials.default )
   # mesh.castShadow = true
   # mesh.receiveShadow = true
   scene.add( mesh )
 
-  geometry = new THREE.TextGeometry("test", {size:200, height:0, curveSegments:0, font:"helvetiker", weight:"bold", style:"normal"})
-  mesh = new THREE.Mesh( geometry, materials.default )
+  geom = new THREE.TextGeometry("test", {size:200, height:0, curveSegments:0, font:"helvetiker", weight:"bold", style:"normal"})
+  mesh = new THREE.Mesh( geom, materials.default )
   mesh.rotation.x = -Math.PI / 2
   # mesh.castShadow = true
   # mesh.receiveShadow = true
@@ -73,19 +73,38 @@ $ ->
     {responseType: 'arraybuffer'},
     (err, data) ->
       console.log(err, data) if err?
-      geometry = require('voxel-geometry').parsers.stl.parse( data )
+
+      geom = require('voxel-geometry').parsers.stl.parse( data )
       # material = new THREE.MeshBasicMaterial( { color: 0x000000, wireframe: true } )
-      mesh = new THREE.Mesh( geometry, materials.default )
+      mesh = new THREE.Mesh( geom, materials.default )
       window.mesh = mesh # last mesh, for debugging
       scene.add( mesh )
       render()
   )
 
+  ###
+  # DEMO
+  var resolution = 24; // increase to get smoother corners (will get slow!)
+  var cube1 = CSG.roundedCube({center: [0,0,0], radius: [10,10,10], roundradius: 2, resolution: resolution});
+  var sphere1 = CSG.sphere({center: [5, 5, 5], radius: 10, resolution: resolution });
+  var sphere2 = sphere1.translate([12, 5, 0]);
+  var sphere3 = CSG.sphere({center: [20, 0, 0], radius: 30, resolution: resolution });
+  var result = cube1;
+  result = result.union(sphere1);
+  result = result.subtract(sphere2);
+  result = result.intersect(sphere3);
+  return result;
+  ###
   csgEditorView = require('client/widgets').csgEditorView(
-    (err, geometry) ->
-      console.log(err, geometry) if err?
-      # Do something with geometry
-      console.log {geometry}
+    (err, csgObject) ->
+      console.log( err ) if err?
+      
+      geom = THREE.CSG.fromCSG csgObject
+      mesh = new THREE.Mesh( geom, materials.default )
+      window.mesh = mesh # last mesh, for debugging
+      scene.add( mesh )
+      render()
+      # console.log {geom}
   )
 
   $(document.body).append fileLoaderView.el

@@ -82,7 +82,9 @@
       if (event.which !== 1) {
         return;
       }
-      moveDistance = screenDistance(mouseDownEvent, event);
+      if (mouseDownEvent != null) {
+        moveDistance = screenDistance(mouseDownEvent, event);
+      }
       if (moveDistance > DRAG_THRESHOLD) {
         return isDrag = true;
       }
@@ -144,102 +146,6 @@
     };
 };
 require['client/control'].nonce = nonce;
-
-require['client/draggable'] = function() {
-    return new function() {
-        var exports = require['client/draggable'] = this;
-        var module = {exports:exports};
-        var process = require("__browserify_process");
-        var __filename = "/Users/jae/workspace/src/sembly.net/client/draggable.coffee";
-        (function() {
-  var Drag, DragBlock, Drop, Move, dragging, dx, dy, getPos;
-
-  dragging = dx = dy = void 0;
-
-  getPos = function(e) {
-    var x, y;
-    if (e.pageX) {
-      x = e.pageX;
-      y = e.pageY;
-      return {
-        x: x,
-        y: y
-      };
-    } else if (e.clientX) {
-      x = clientX;
-      y = clientY;
-      return {
-        x: x,
-        y: y
-      };
-    }
-  };
-
-  Drag = function(e) {
-    var offset, src, x, y, _ref;
-    if (!e) {
-      e = window.event;
-    }
-    _ref = getPos(e), x = _ref.x, y = _ref.y;
-    src = (e.target ? e.target : e.srcElement);
-    dragging = $(src).closest('.draggable');
-    dragging.addClass('dragging');
-    offset = dragging.offset();
-    dx = x - offset.left;
-    dy = y - offset.top;
-    return false;
-  };
-
-  DragBlock = function(e) {
-    if (!e) {
-      e = window.event;
-    }
-    return e.stopPropagation();
-  };
-
-  Move = function(e) {
-    var x, y, _ref;
-    if (!dragging) {
-      return;
-    }
-    if (!e) {
-      e = window.event;
-    }
-    _ref = getPos(e), x = _ref.x, y = _ref.y;
-    return dragging.css({
-      left: x - dx,
-      top: y - dy
-    });
-  };
-
-  Drop = function(e) {
-    if (!dragging) {
-      return;
-    }
-    dragging.removeClass('dragging');
-    return dragging = void 0;
-  };
-
-  $(document).mousemove(Move);
-
-  $(document).mouseup(Drop);
-
-  this.makeDraggable = function(el) {
-    el.addClass('draggable');
-    return el.mousedown(Drag);
-  };
-
-  this.blockDrag = function(el) {
-    el.addClass('dragBlock');
-    return el.mousedown(DragBlock);
-  };
-
-}).call(this);
-
-        return (require['client/draggable'] = module.exports);
-    };
-};
-require['client/draggable'].nonce = nonce;
 
 require['client/helpers'] = function() {
     return new function() {
@@ -621,6 +527,9 @@ require['client'] = function() {
       scene.add(mesh);
       return render();
     });
+    setTimeout(function() {
+      return csgEditorView.mirror.setValue("var resolution = 24; // increase to get smoother corners (will get slow!)\nvar cube1 = CSG.roundedCube({center: [0,0,0], radius: [10,10,10], roundradius: 2, resolution: resolution});\nvar sphere1 = CSG.sphere({center: [5, 5, 5], radius: 10, resolution: resolution });\nvar sphere2 = sphere1.translate([12, 5, 0]);\nvar sphere3 = CSG.sphere({center: [20, 0, 0], radius: 30, resolution: resolution });\nvar result = cube1;\nresult = result.union(sphere1);\nresult = result.subtract(sphere2);\nresult = result.intersect(sphere3);\nreturn result;");
+    }, 0);
     $(document.body).append(fileLoaderView.el);
     return $(document.body).append(csgEditorView.el);
   });
@@ -778,17 +687,99 @@ require['client/three_csg'] = function() {
       return CSG.fromPolygons(polygons);
     },
     fromCSG: function(csg_model) {
-      var b, color, connectors, face, i, j, poly, polygons, properties, searchForConnectors, three_geometry, tmp, vertices;
+      var color, end, face, faceNormal, fetchVertexIndex, found, i, i1, i2, i3, i4, index, j, polyVertices, polygon, polygonIndex, polygons, srcNormal, start, three_geometry, v, vertex, vertexIndex, verticesIndex, vindex, _i, _j, _k, _l, _len, _len1, _m, _ref1, _ref2, _ref3,
+        _this = this;
+      start = new Date().getTime();
+      csg_model = csg_model.canonicalized();
+      csg_model = csg_model.reTesselated();
+      three_geometry = new THREE.Geometry();
+      polygons = csg_model.toPolygons();
+      verticesIndex = {};
+      fetchVertexIndex = function(vertex, index) {
+        var key, result, threeVertex, v, x, y, z, _ref1;
+        x = vertex.pos.x;
+        y = vertex.pos.y;
+        z = vertex.pos.z;
+        key = "" + x + "," + y + "," + z;
+        if (!(key in verticesIndex)) {
+          threeVertex = new THREE.Vector3(vertex.pos._x, vertex.pos._y, vertex.pos._z);
+          result = [index, threeVertex];
+          verticesIndex[key] = result;
+          result = [index, threeVertex, false];
+          return result;
+        } else {
+          _ref1 = verticesIndex[key], index = _ref1[0], v = _ref1[1];
+          return [index, v, true];
+        }
+      };
+      vertexIndex = 0;
+      for (polygonIndex = _i = 0, _len = polygons.length; _i < _len; polygonIndex = ++_i) {
+        polygon = polygons[polygonIndex];
+        color = new THREE.Color(0xaaaaaa);
+        try {
+          color.r = polygon.shared.color[0];
+          color.g = polygon.shared.color[1];
+          color.b = polygon.shared.color[2];
+        } catch (_error) {}
+        polyVertices = [];
+        _ref1 = polygon.vertices;
+        for (vindex = _j = 0, _len1 = _ref1.length; _j < _len1; vindex = ++_j) {
+          vertex = _ref1[vindex];
+          _ref2 = fetchVertexIndex(vertex, vertexIndex), index = _ref2[0], v = _ref2[1], found = _ref2[2];
+          polyVertices.push(index);
+          if (!found) {
+            three_geometry.vertices.push(v);
+            vertexIndex += 1;
+          }
+        }
+        srcNormal = polygon.plane.normal;
+        faceNormal = new THREE.Vector3(srcNormal.x, srcNormal.z, srcNormal.y);
+        if (polygon.vertices.length === 4) {
+          i1 = polyVertices[0];
+          i2 = polyVertices[1];
+          i3 = polyVertices[2];
+          i4 = polyVertices[3];
+          face = new THREE.Face4(i1, i2, i3, i4, faceNormal);
+          for (i = _k = 0; _k <= 3; i = ++_k) {
+            face.vertexColors[i] = color;
+          }
+          three_geometry.faces.push(face);
+          three_geometry.faceVertexUvs[0].push([new THREE.Vector2(), new THREE.Vector2(), new THREE.Vector2(), new THREE.Vector2()]);
+        } else {
+          for (i = _l = 2, _ref3 = polyVertices.length; 2 <= _ref3 ? _l < _ref3 : _l > _ref3; i = 2 <= _ref3 ? ++_l : --_l) {
+            i1 = polyVertices[0];
+            i2 = polyVertices[i - 1];
+            i3 = polyVertices[i];
+            face = new THREE.Face3(i1, i2, i3, faceNormal);
+            for (j = _m = 0; _m < 3; j = ++_m) {
+              face.vertexColors[j] = color;
+            }
+            three_geometry.faces.push(face);
+            three_geometry.faceVertexUvs[0].push([new THREE.Vector2(), new THREE.Vector2(), new THREE.Vector2()]);
+          }
+        }
+      }
+      three_geometry.computeBoundingBox();
+      three_geometry.computeCentroids();
+      console.log("resulting three.geometry");
+      console.log(three_geometry);
+      end = new Date().getTime();
+      console.log("Conversion to three.geometry time: " + (end - start));
+      return three_geometry;
+    },
+    fromCSG_: function(csg_model) {
+      var b, color, connectors, end, face, i, j, poly, polygons, properties, searchForConnectors, start, three_geometry, tmp, vertices;
       i = void 0;
       j = void 0;
       vertices = void 0;
       face = void 0;
       three_geometry = new THREE.Geometry();
+      start = new Date().getTime();
       polygons = csg_model.toPolygons();
+      end = new Date().getTime();
+      console.log("Csg polygon fetch time: " + (end - start));
       properties = csg_model.properties;
-      if (!CSG) {
-        throw "CSG library not loaded. Please get a copy from https://github.com/evanw/csg.js";
-      }
+      start = new Date().getTime();
       i = 0;
       while (i < polygons.length) {
         color = new THREE.Color(0xaaaaaa);
@@ -823,6 +814,8 @@ require['client/three_csg'] = function() {
         }
         i++;
       }
+      end = new Date().getTime();
+      console.log("Conversion to three.geometry time: " + (end - start));
       connectors = [];
       searchForConnectors = function(obj) {
         var axisvector, connector, geometry, index, point, prop, _results;
@@ -860,20 +853,6 @@ require['client/three_csg'] = function() {
         }
         return _results;
       };
-      searchForConnectors(properties);
-      /*   
-      for index, prop of properties
-        if (typeof prop) != "function"
-          console.log "property"
-          console.log prop
-          if "axisvector" of prop
-            console.log "blaaaah"
-          #for i,p of prop
-          #  console.log typeof prop
-      */
-
-      three_geometry.connectors = connectors;
-      three_geometry.computeBoundingBox();
       return three_geometry;
     },
     getGeometryVertice: function(geometry, vertice_position) {
@@ -944,9 +923,42 @@ require['client/view'] = function() {
 
 
 (function() {
-  var View, randomColor;
+  var View, dragging, dx, dy, getPos, randomColor;
 
   randomColor = require('client/helpers').randomColor;
+
+  getPos = function(e) {
+    var _ref, _ref1;
+    return {
+      x: (_ref = e.pageX) != null ? _ref : e.clientX,
+      y: (_ref1 = e.pageY) != null ? _ref1 : e.clientY
+    };
+  };
+
+  dragging = dx = dy = void 0;
+
+  $(document).mousemove(function(e) {
+    var x, y, _ref;
+    if (!dragging) {
+      return;
+    }
+    if (!e) {
+      e = window.event;
+    }
+    _ref = getPos(e), x = _ref.x, y = _ref.y;
+    return dragging.css({
+      left: x - dx,
+      top: y - dy
+    });
+  });
+
+  $(document).mouseup(function(e) {
+    if (!dragging) {
+      return;
+    }
+    dragging.removeClass('dragging');
+    return dragging = void 0;
+  });
 
   this.View = View = (function() {
 
@@ -980,6 +992,8 @@ require['client/view'] = function() {
       }
       this.content.addClass('view_content');
       this.el.append(this.content);
+      this.makeDraggable();
+      this.makeResizable();
       this.repaint();
     }
 
@@ -1031,6 +1045,48 @@ require['client/view'] = function() {
       };
     };
 
+    View.prototype.makeDraggable = function() {
+      this.el.addClass('draggable');
+      this.el.css({
+        cursor: 'move'
+      });
+      this.el.mousedown(function(e) {
+        var offset, src, x, y, _ref;
+        if (!e) {
+          e = window.event;
+        }
+        _ref = getPos(e), x = _ref.x, y = _ref.y;
+        src = (e.target ? e.target : e.srcElement);
+        dragging = $(src).closest('.draggable');
+        dragging.addClass('dragging');
+        offset = dragging.offset();
+        dx = x - offset.left;
+        dy = y - offset.top;
+        return false;
+      });
+      this.content.addClass('dragBlock');
+      return this.content.mousedown(function(e) {
+        if (!e) {
+          e = window.event;
+        }
+        return e.stopPropagation();
+      });
+    };
+
+    View.prototype.makeResizable = function() {
+      var tab;
+      tab = $('<div/>').css({
+        backgroundColor: '#AAA',
+        width: 10,
+        height: 10,
+        position: 'absolute',
+        right: 0,
+        bottom: 0,
+        cursor: 'se-resize'
+      });
+      return this.el.append(tab);
+    };
+
     return View;
 
   })();
@@ -1049,13 +1105,11 @@ require['client/widgets'] = function() {
         var process = require("__browserify_process");
         var __filename = "/Users/jae/workspace/src/sembly.net/client/widgets.coffee";
         (function() {
-  var CAG, CSG, View, blockDrag, editorView, fileInputEl, makeDraggable, _ref, _ref1;
+  var CAG, CSG, View, editorView, fileInputEl, _ref;
 
   _ref = require('csg'), CSG = _ref.CSG, CAG = _ref.CAG;
 
   View = require('client/view').View;
-
-  _ref1 = require('client/draggable'), blockDrag = _ref1.blockDrag, makeDraggable = _ref1.makeDraggable;
 
   require('client/three_csg');
 
@@ -1072,12 +1126,12 @@ require['client/widgets'] = function() {
   };
 
   this.fileLoaderView = function(options, fileCb) {
-    var responseType, singleUse, view, _ref2, _ref3, _ref4;
+    var responseType, singleUse, view, _ref1, _ref2, _ref3;
     if (options instanceof Function) {
-      _ref2 = [null, options], options = _ref2[0], fileCb = _ref2[1];
+      _ref1 = [null, options], options = _ref1[0], fileCb = _ref1[1];
     }
-    responseType = (_ref3 = options != null ? options.responseType : void 0) != null ? _ref3 : 'arraybuffer';
-    singleUse = (_ref4 = options != null ? options.singleUse : void 0) != null ? _ref4 : false;
+    responseType = (_ref2 = options != null ? options.responseType : void 0) != null ? _ref2 : 'arraybuffer';
+    singleUse = (_ref3 = options != null ? options.singleUse : void 0) != null ? _ref3 : false;
     view = new View({
       top: 20,
       left: 20
@@ -1109,18 +1163,16 @@ require['client/widgets'] = function() {
     view.write('\n\n  or, \n\n');
     view.write('import URL\n');
     view.append($('<input/>'));
-    makeDraggable(view.el);
-    blockDrag(view.content);
     return view;
   };
 
   this.editorView = editorView = function(options, saveCb, cancelCb) {
-    var mirror, mode, tabSize, view, _ref2, _ref3, _ref4;
+    var mirror, mode, tabSize, view, _ref1, _ref2, _ref3;
     if (options instanceof Function) {
-      _ref2 = [null, options, saveCb], options = _ref2[0], saveCb = _ref2[1], cancelCb = _ref2[2];
+      _ref1 = [null, options, saveCb], options = _ref1[0], saveCb = _ref1[1], cancelCb = _ref1[2];
     }
-    mode = (_ref3 = options != null ? options.mode : void 0) != null ? _ref3 : 'coffeescript';
-    tabSize = (_ref4 = options != null ? options.tabSize : void 0) != null ? _ref4 : 2;
+    mode = (_ref2 = options != null ? options.mode : void 0) != null ? _ref2 : 'coffeescript';
+    tabSize = (_ref3 = options != null ? options.tabSize : void 0) != null ? _ref3 : 2;
     view = new View({
       top: 180,
       left: 20,
@@ -1147,15 +1199,13 @@ require['client/widgets'] = function() {
       saveCb(mirror.getValue());
       return null;
     }));
-    makeDraggable(view.el);
-    blockDrag(view.content);
     return view;
   };
 
   this.csgEditorView = function(options, geomCb) {
-    var view, _ref2;
+    var view, _ref1;
     if (options instanceof Function) {
-      _ref2 = [null, options], options = _ref2[0], geomCb = _ref2[1];
+      _ref1 = [null, options], options = _ref1[0], geomCb = _ref1[1];
     }
     return view = editorView(options, function(code) {
       var fn, geometry;
@@ -38163,7 +38213,7 @@ require['voxel-geometry'] = function() {
         var exports = require['voxel-geometry'] = this;
         var module = {exports:exports};
         var process = require("__browserify_process");
-        var __filename = "/Users/jae/workspace/src/sembly.net/node_modules/voxel-geometry/index.js";
+        var __filename = "/Users/jae/workspace/src/voxel-geometry/index.js";
         // Generated by CoffeeScript 1.3.3
 (function() {
   var binaryXHR, stlParser;
@@ -38325,7 +38375,7 @@ require['voxel-geometry/stl_parser'] = function() {
         var exports = require['voxel-geometry/stl_parser'] = this;
         var module = {exports:exports};
         var process = require("__browserify_process");
-        var __filename = "/Users/jae/workspace/src/sembly.net/node_modules/voxel-geometry/stl_parser.js";
+        var __filename = "/Users/jae/workspace/src/voxel-geometry/stl_parser.js";
         // Generated by CoffeeScript 1.3.3
 
 /*

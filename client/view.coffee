@@ -3,6 +3,22 @@
 
 {randomColor} = require 'client/helpers'
 
+getPos = (e) -> {
+  x: (e.pageX ? e.clientX),
+  y: (e.pageY ? e.clientY)
+}
+dragging = dx = dy = undefined
+
+$(document).mousemove (e) ->
+  return unless dragging
+  {x,y} = getPos e
+  dragging.css(left:(x-dx), top:(y-dy))
+
+$(document).mouseup (e) ->
+  return unless dragging
+  dragging.removeClass('dragging')
+  dragging = undefined
+
 @View = class View
   constructor: ({@el, @content, @padding, @width, @height, @top, @left, @border, @background}={}) ->
     # defaults
@@ -23,6 +39,9 @@
     @content.addClass('view_content')
 
     @el.append @content
+
+    @makeDraggable()
+    @makeResizable()
 
     @repaint()
 
@@ -48,3 +67,39 @@
 
   # TODO
   splitVertical: -> {top, bottom}
+
+  makeDraggable: ->
+    @el.addClass 'draggable'
+    @el.css cursor:'move'
+    @el.mousedown (e) ->
+      {x,y} = getpos e
+      dragging = $(e.target).closest('.draggable')
+      dragging.addclass('dragging')
+      offset = dragging.offset()
+      dx = x - offset.left
+      dy = y - offset.top
+      return no
+
+    @content.addClass 'dragBlock'
+    @content.mousedown (e) ->
+      e.stopPropagation()
+
+  makeResizable: ->
+    @el.append tab=$('<div/>').css(
+      backgroundColor:'#AAA'
+      width:    10
+      height:   10
+      position: 'absolute'
+      right:    0
+      bottom:   0
+      cursor:   'se-resize'
+    )
+
+    tab.mousedown (e) ->
+      {x,y} = getpos e
+      dragging = $(e.target).closest('.resizable')
+      dragging.addclass('resizing')
+      offset = dragging.offset()
+      dx = x - offset.left
+      dy = y - offset.top
+      return no

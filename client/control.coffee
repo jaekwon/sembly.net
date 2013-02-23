@@ -42,7 +42,7 @@ screenDistance = (start, current) ->
     return unless event.which is 1 # mouse is down
     # detect "dragging", which is sure to be happening
     # when moveDistance is above some threshold
-    moveDistance = screenDistance mouseDownEvent, event
+    moveDistance = screenDistance mouseDownEvent, event if mouseDownEvent?
     isDrag = yes if moveDistance > DRAG_THRESHOLD
   $(elem).mouseup (event) ->
     return true if isDrag

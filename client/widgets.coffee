@@ -1,6 +1,5 @@
 {CSG, CAG} = require 'csg'
 {View} = require 'client/view'
-{blockDrag, makeDraggable} = require 'client/draggable'
 
 require 'client/three_csg'
 
@@ -53,9 +52,6 @@ fileInputEl = (cb) ->
   view.write('import URL\n')
   view.append $('<input/>')
 
-  makeDraggable view.el
-  blockDrag view.content
-
   return view
 
 @editorView = editorView = (options, saveCb, cancelCb) ->
@@ -100,9 +96,6 @@ fileInputEl = (cb) ->
   view.append $('<button/>').text('RUN').click (e) ->
     saveCb( mirror.getValue() )
     null
-
-  makeDraggable view.el
-  blockDrag view.content
 
   return view
 

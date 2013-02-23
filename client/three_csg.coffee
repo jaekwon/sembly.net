@@ -1,15 +1,15 @@
-THREE = require 'three'
-{CSG, CAG} = require 'csg'
-
 #
 #    THREE.CSG
 # @author Chandler Prall <chandler.prall@gmail.com> http://chandler.prallfamily.com
 # @modified by Mark Moissette 
+# @modified by Jae Kwon
 # Wrapper for Evan Wallace's CSG library (https://github.com/evanw/csg.js/)
 # Provides CSG capabilities for Three.js models.
 # 
 # Provided under the MIT License
 #
+THREE = require 'three'
+{CSG, CAG} = require 'csg'
 THREE.CSG =
   toCSG: (three_model, offset, rotation) ->
     i = undefined
@@ -103,37 +103,103 @@ THREE.CSG =
     console.log "THREE.CSG toCSG done"
     CSG.fromPolygons polygons
 
+
   fromCSG: (csg_model) ->
+    start = new Date().getTime()
+    #need to remove duplicate vertices, keeping the right index
+    csg_model = csg_model.canonicalized()
+    csg_model = csg_model.reTesselated()
+    #csg_model = csg_model.fixTJunctions()
     
-    #TODO: attempt to output multiple models based on name ? (or some other unique id?)
+    three_geometry = new THREE.Geometry()
+    polygons = csg_model.toPolygons()
+    
+    verticesIndex= {}
+    
+    fetchVertexIndex = (vertex, index)=>
+      x = vertex.pos.x
+      y = vertex.pos.y
+      z = vertex.pos.z
+      key = "#{x},#{y},#{z}"
+      if not (key of verticesIndex)
+        threeVertex = new THREE.Vector3(vertex.pos._x,vertex.pos._y,vertex.pos._z)
+        result = [index,threeVertex]
+        verticesIndex[key]= result
+        result = [index,threeVertex,false]
+        return result
+      else
+        [index,v] = verticesIndex[key]
+        return [index,v,true]
+      
+    vertexIndex = 0
+    for polygon, polygonIndex in polygons
+      color = new THREE.Color(0xaaaaaa)
+      try
+        color.r = polygon.shared.color[0]
+        color.g = polygon.shared.color[1]
+        color.b = polygon.shared.color[2]
+      
+      polyVertices = []
+      for vertex,vindex in polygon.vertices
+        [index,v,found] = fetchVertexIndex(vertex,vertexIndex)
+        polyVertices.push(index)
+        if not found
+          three_geometry.vertices.push(v)
+          vertexIndex+=1
+      
+      srcNormal = polygon.plane.normal
+      faceNormal = new THREE.Vector3(srcNormal.x,srcNormal.z,srcNormal.y)
+      if polygon.vertices.length == 4
+        i1 = polyVertices[0]
+        i2 = polyVertices[1]
+        i3 = polyVertices[2]
+        i4 = polyVertices[3]
+        face = new THREE.Face4(i1,i2,i3,i4,faceNormal)
+        face.vertexColors[i] = color for i in [0..3]
+        
+        three_geometry.faces.push face
+        three_geometry.faceVertexUvs[0].push [new THREE.Vector2(), new THREE.Vector2(), new THREE.Vector2(), new THREE.Vector2()]
+      else 
+        for i in [2...polyVertices.length]
+          i1 = polyVertices[0]
+          i2 = polyVertices[i-1]
+          i3 = polyVertices[i]
+          face = new THREE.Face3(i1,i2,i3,faceNormal)
+          face.vertexColors[j] = color for j in [0...3]
+          three_geometry.faces.push face
+          three_geometry.faceVertexUvs[0].push [new THREE.Vector2(), new THREE.Vector2(), new THREE.Vector2()]
+    
+    three_geometry.computeBoundingBox()
+    three_geometry.computeCentroids()
+    
+    console.log "resulting three.geometry"
+    console.log three_geometry
+    end = new Date().getTime()
+    console.log "Conversion to three.geometry time: #{end-start}"
+    three_geometry
+
+  fromCSG_: (csg_model) ->
     #TODO: fix normals?
     i = undefined
     j = undefined
     vertices = undefined
     face = undefined
     three_geometry = new THREE.Geometry()
+    start = new Date().getTime()
     polygons = csg_model.toPolygons()
-    properties = csg_model.properties
-    #console.log(csg_model);
-    throw "CSG library not loaded. Please get a copy from https://github.com/evanw/csg.js"  unless CSG
+    end = new Date().getTime()
+    console.log "Csg polygon fetch time: #{end-start}"
+    
+    properties = csg_model.properties    
+    start = new Date().getTime()
     i = 0
     while i < polygons.length
       color = new THREE.Color(0xaaaaaa)
       try
         poly = polygons[i]
-        
-        #console.log("poly");
-        #         console.log(poly);
-        #         console.log("shared");
-        #         console.log(poly.shared.name);
-        
-        # console.log("color check");
-        #                console.log(poly.shared.color[0]);
         color.r = poly.shared.color[0]
         color.g = poly.shared.color[1]
         color.b = poly.shared.color[2]
-      
-      #console.log("Error: "+e);
       
       # Vertices
       vertices = []
@@ -157,7 +223,9 @@ THREE.CSG =
         three_geometry.faceVertexUvs[0].push [new THREE.Vector2(), new THREE.Vector2(), new THREE.Vector2()]
         j++
       i++
-      
+    
+    end = new Date().getTime()
+    console.log "Conversion to three.geometry time: #{end-start}"
     
     connectors = []
     searchForConnectors = (obj)->
@@ -190,26 +258,15 @@ THREE.CSG =
           ###
           searchForConnectors(prop)
     
-    searchForConnectors(properties)
-    ###   
-    for index, prop of properties
-      if (typeof prop) != "function"
-        console.log "property"
-        console.log prop
-        if "axisvector" of prop
-          console.log "blaaaah"
-        #for i,p of prop
-        #  console.log typeof prop
-    ###
-    three_geometry.connectors  = connectors
-    three_geometry.computeBoundingBox()
+    #searchForConnectors(properties)
+    #three_geometry.connectors  = connectors      
+    #three_geometry.computeBoundingBox()
     three_geometry
 
   getGeometryVertice: (geometry, vertice_position) ->
     i = undefined
     i = 0
     while i < geometry.vertices.length
-      
       # Vertice already exists
       return i  if geometry.vertices[i].x is vertice_position.x and geometry.vertices[i].y is vertice_position.y and geometry.vertices[i].z is vertice_position.z
       i++

@@ -489,6 +489,16 @@ require['client'] = function() {
     var csgEditorView, fileLoaderView;
     init();
     animate();
+    window.webkitStorageInfo.requestQuota(PERSISTENT, 100 * 1024 * 1024, function(grantedBytes) {
+      console.log("Granted: " + (grantedBytes / 1024 / 1024) + " Mbytes");
+      return window.webkitRequestFileSystem(PERSISTENT, grantedBytes, (function(fs) {
+        return console.log("Got requested file system: " + fs);
+      }), (function(e) {
+        return console.log("Error requesting file system: " + e);
+      }));
+    }, (function(e) {
+      return console.log("Error querying storageinfo: " + e);
+    }));
     fileLoaderView = require('client/widgets').fileLoaderView({
       responseType: 'arraybuffer'
     }, function(err, data) {
@@ -923,7 +933,7 @@ require['client/view'] = function() {
 
 
 (function() {
-  var View, dragging, dx, dy, getPos, randomColor;
+  var View, getPos, randomColor;
 
   randomColor = require('client/helpers').randomColor;
 
@@ -934,31 +944,6 @@ require['client/view'] = function() {
       y: (_ref1 = e.pageY) != null ? _ref1 : e.clientY
     };
   };
-
-  dragging = dx = dy = void 0;
-
-  $(document).mousemove(function(e) {
-    var x, y, _ref;
-    if (!dragging) {
-      return;
-    }
-    if (!e) {
-      e = window.event;
-    }
-    _ref = getPos(e), x = _ref.x, y = _ref.y;
-    return dragging.css({
-      left: x - dx,
-      top: y - dy
-    });
-  });
-
-  $(document).mouseup(function(e) {
-    if (!dragging) {
-      return;
-    }
-    dragging.removeClass('dragging');
-    return dragging = void 0;
-  });
 
   this.View = View = (function() {
 
@@ -1046,36 +1031,45 @@ require['client/view'] = function() {
     };
 
     View.prototype.makeDraggable = function() {
+      var dx, dy,
+        _this = this;
       this.el.addClass('draggable');
       this.el.css({
         cursor: 'move'
       });
-      this.el.mousedown(function(e) {
-        var offset, src, x, y, _ref;
-        if (!e) {
-          e = window.event;
-        }
+      dx = dy = void 0;
+      this.el.bind('mousedown', function(e) {
+        var offset, x, y, _ref;
         _ref = getPos(e), x = _ref.x, y = _ref.y;
-        src = (e.target ? e.target : e.srcElement);
-        dragging = $(src).closest('.draggable');
-        dragging.addClass('dragging');
-        offset = dragging.offset();
+        _this.el.addClass('dragging');
+        offset = _this.el.offset();
         dx = x - offset.left;
         dy = y - offset.top;
+        $(document).bind('mousemove.dragging', function(e) {
+          var _ref1;
+          _ref1 = getPos(e), x = _ref1.x, y = _ref1.y;
+          return _this.el.css({
+            left: x - dx,
+            top: y - dy
+          });
+        });
+        $(document).bind('mouseup.dragging', function(e) {
+          _this.el.removeClass('dragging');
+          return $(document).unbind('.dragging');
+        });
         return false;
       });
       this.content.addClass('dragBlock');
       return this.content.mousedown(function(e) {
-        if (!e) {
-          e = window.event;
-        }
         return e.stopPropagation();
       });
     };
 
     View.prototype.makeResizable = function() {
-      var tab;
-      tab = $('<div/>').css({
+      var dx, dy, tab,
+        _this = this;
+      this.el.addClass('resizable');
+      this.el.append(tab = $('<div/>').css({
         backgroundColor: '#AAA',
         width: 10,
         height: 10,
@@ -1083,8 +1077,26 @@ require['client/view'] = function() {
         right: 0,
         bottom: 0,
         cursor: 'se-resize'
+      }).addClass('resize_tab'));
+      dx = dy = void 0;
+      return tab.bind('mousedown', function(e) {
+        var x, y, _ref;
+        _ref = getPos(e), x = _ref.x, y = _ref.y;
+        _this.el.addClass('resizing');
+        dx = x - _this.el.width();
+        dy = y - _this.el.height();
+        $(document).bind('mousemove.resizing', function(e) {
+          var _ref1;
+          _ref1 = getPos(e), x = _ref1.x, y = _ref1.y;
+          _this.el.width(x - dx);
+          return _this.el.height(y - dy);
+        });
+        $(document).bind('mouseup.resizing', function(e) {
+          _this.el.removeClass('resizing');
+          return $(document).unbind('.resizing');
+        });
+        return false;
       });
-      return this.el.append(tab);
     };
 
     return View;

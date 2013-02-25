@@ -69,6 +69,18 @@ $ ->
   init()
   animate()
 
+  # Request persistent file storage
+  window.webkitStorageInfo.requestQuota PERSISTENT, 100*1024*1024, (grantedBytes) ->
+    console.log "Granted: #{grantedBytes/1024/1024} Mbytes"
+    window.webkitRequestFileSystem PERSISTENT, grantedBytes
+    , ((fs) -> # On Success
+      console.log "Got requested file system: #{fs}")
+    , ((e) -> # On Error
+      console.log "Error requesting file system: #{e}")
+  , ((e) -> # On Error
+    console.log "Error querying storageinfo: #{e}")
+
+  # Add file-loader widget
   fileLoaderView = require('client/widgets').fileLoaderView(
     {responseType: 'arraybuffer'},
     (err, data) ->

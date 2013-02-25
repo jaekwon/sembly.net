@@ -7,17 +7,6 @@ getPos = (e) -> {
   x: (e.pageX ? e.clientX),
   y: (e.pageY ? e.clientY)
 }
-dragging = dx = dy = undefined
-
-$(document).mousemove (e) ->
-  return unless dragging
-  {x,y} = getPos e
-  dragging.css(left:(x-dx), top:(y-dy))
-
-$(document).mouseup (e) ->
-  return unless dragging
-  dragging.removeClass('dragging')
-  dragging = undefined
 
 @View = class View
   constructor: ({@el, @content, @padding, @width, @height, @top, @left, @border, @background}={}) ->
@@ -71,13 +60,24 @@ $(document).mouseup (e) ->
   makeDraggable: ->
     @el.addClass 'draggable'
     @el.css cursor:'move'
-    @el.mousedown (e) ->
-      {x,y} = getpos e
-      dragging = $(e.target).closest('.draggable')
-      dragging.addclass('dragging')
-      offset = dragging.offset()
+
+    dx = dy = undefined
+
+    @el.bind 'mousedown', (e) =>
+      {x, y} = getPos e
+      @el.addClass 'dragging'
+      offset = @el.offset()
       dx = x - offset.left
       dy = y - offset.top
+
+      $(document).bind 'mousemove.dragging', (e) =>
+        {x, y} = getPos e
+        @el.css(left:(x-dx), top:(y-dy))
+
+      $(document).bind 'mouseup.dragging', (e) =>
+        @el.removeClass 'dragging'
+        $(document).unbind '.dragging'
+
       return no
 
     @content.addClass 'dragBlock'
@@ -85,6 +85,7 @@ $(document).mouseup (e) ->
       e.stopPropagation()
 
   makeResizable: ->
+    @el.addClass 'resizable'
     @el.append tab=$('<div/>').css(
       backgroundColor:'#AAA'
       width:    10
@@ -93,13 +94,23 @@ $(document).mouseup (e) ->
       right:    0
       bottom:   0
       cursor:   'se-resize'
-    )
+    ).addClass('resize_tab')
 
-    tab.mousedown (e) ->
-      {x,y} = getpos e
-      dragging = $(e.target).closest('.resizable')
-      dragging.addclass('resizing')
-      offset = dragging.offset()
-      dx = x - offset.left
-      dy = y - offset.top
+    dx = dy = undefined
+
+    tab.bind 'mousedown', (e) =>
+      {x, y} = getPos e
+      @el.addClass 'resizing'
+      dx = x - @el.width()
+      dy = y - @el.height()
+
+      $(document).bind 'mousemove.resizing', (e) =>
+        {x, y} = getPos e
+        @el.width( x-dx )
+        @el.height( y-dy )
+
+      $(document).bind 'mouseup.resizing', (e) =>
+        @el.removeClass 'resizing'
+        $(document).unbind '.resizing'
+
       return no
